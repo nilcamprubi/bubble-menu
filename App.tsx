@@ -1,11 +1,21 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import BubbleMenu from './components/BubbleMenu';
+import type { BubbleItem } from './components/BubbleMenu';
+
+const menuItems: BubbleItem[] = [ 
+  { label: "Home", radius: 70 }, 
+  { label: "Diets", radius: 50 }, 
+  { label: "Recipes", radius: 50 }, 
+  { label: "Tips", radius: 50 },
+  { label: "Profile", radius: 50 } 
+];
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <BubbleMenu
+        items={menuItems}
+      />
     </View>
   );
 }
