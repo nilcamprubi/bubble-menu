@@ -15,6 +15,7 @@ export interface BubbleProps {
   originalY?: number;
   getPosition?: () => Position;
   setPosition?: (pos: Position) => void;
+  getIsDragging?: () => boolean;
 }
 
 export interface Position {
@@ -25,19 +26,32 @@ export interface Position {
 const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
+  const [isDragging, setIsDragging] = useState(false);
 
   useImperativeHandle(ref, () => ({
     getPosition: () => {
       // console.log("Retrieving position of ", label,": ", currentPosition.x, " ", currentPosition.y)
       return currentPosition;
     },
-    setPosition: (pos: Position) => setCurrentPosition(pos),
+    setPosition: (pos: Position) => {
+      if (!isDragging) {
+        setCurrentPosition(pos);
+      }
+    },
+    getIsDragging: () => {
+      return isDragging;
+    }
   }));
 
     // Initialize bubble refs and positions
     useEffect(() => {
       // console.log(label, " position: ", currentPosition.x, " ", currentPosition.y)
     }, [currentPosition]);
+
+  // Log state changes
+  useEffect(() => {
+    console.log("Dragging state changed for", label, ":", isDragging);
+  }, [isDragging]);
 
   // Sets the movement of the bubble
   const panResponder = useRef(
@@ -53,6 +67,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
           x: originalX! + gesture.dx,
           y: originalY! + gesture.dy
         });
+        setIsDragging(true);
       },
       onPanResponderRelease: () => {
         Animated.spring(pan, {
@@ -63,6 +78,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
           x: originalX!,
           y: originalY!
         });
+        setIsDragging(false);
       },
     }),
   ).current;

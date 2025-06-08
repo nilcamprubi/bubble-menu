@@ -11,20 +11,20 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   const { width, height } = Dimensions.get('window');
   const centerX = width / 2;
   const centerY = height / 2;
-  const bubbleRefs = useRef<Record<string, { getPosition: () => Position; setPosition: (pos: Position) => void }>>({});
+  const bubbleRefs = useRef<Record<string, { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean }>>({});
 
     // Keep position within window bounds
     const constrainToWindow = (pos: Position, radius: number): Position => {
       return {
-        x: Math.max(radius, Math.min(width - radius, pos.x)),
-        y: Math.max(radius, Math.min(height - radius, pos.y))
+        x: Math.max(0, Math.min(width - radius * 2, pos.x)),
+        y: Math.max(radius, Math.min(height - radius * 2, pos.y))
       };
     };
 
   const initialPositions = useMemo(() => {
     return items.map((item, index) => {
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / 2;
-      const distance = index === 0 ? 0 : 150;
+      const distance = index === 0 ? 0 : 110;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
   
@@ -39,7 +39,7 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   useEffect(() => {
     const initialPositions = items.map((item, index) => {
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI/2;
-      const distance = index === 0 ? 0 : 150;
+      const distance = index === 0 ? 0 : 110;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
       
@@ -62,7 +62,7 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
 
           if (!circleA || !circleB) continue;
 
-          const minDist = items[i].radius + items[j].radius;
+          const minDist = items[i].radius + items[j].radius + 10;
 
           const dx = circleB.getPosition().x - circleA.getPosition().x;
           const dy = circleB.getPosition().y - circleA.getPosition().y;
@@ -73,46 +73,46 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
             console.log("Collision detected: ", items[i].label, " and ", items[j].label);
             console.log("Position ", items[i].label, ": ", circleA.getPosition().x, " ", circleA.getPosition().y);
             console.log("Position ", items[j].label, ": ", circleB.getPosition().x, " ", circleB.getPosition().y);
-          //   const overlapDistance = minDist - distanceBetweenCenters;
-          //   const percentOverlap = overlapDistance / minDist;
+            const overlapDistance = minDist - distanceBetweenCenters;
+            const percentOverlap = overlapDistance / minDist;
 
-          //   // Reduce the movement factor significantly
-          //   const movementFactor = 0.5; // Reduced from 0.5 to 0.15
+            // Update refs with constrained positions
+            const newPosA = constrainToWindow({
+              x: circleA.getPosition().x - dx * percentOverlap,
+              y: circleA.getPosition().y - dy * percentOverlap
+            }, items[i].radius);
 
-          //   // Update refs with constrained positions
-          //   const newPosA = constrainToWindow({
-          //     x: circleA.getPosition().x - dx * movementFactor,
-          //     y: circleA.getPosition().y - dy * movementFactor
-          //   }, items[i].radius);
+            const newPosB = constrainToWindow({
+              x: circleB.getPosition().x + dx * percentOverlap,
+              y: circleB.getPosition().y + dy * percentOverlap
+            }, items[j].radius);
 
-          //   const newPosB = constrainToWindow({
-          //     x: circleB.getPosition().x + dx * movementFactor,
-          //     y: circleB.getPosition().y + dy * movementFactor
-          //   }, items[j].radius);
+            // Smooth the transition by interpolating between current and new positions
+            circleA.setPosition({
+              x: circleA.getPosition().x + (newPosA.x - circleA.getPosition().x) * 0.3,
+              y: circleA.getPosition().y + (newPosA.y - circleA.getPosition().y) * 0.3
+            });
 
-          //   // Smooth the transition by interpolating between current and new positions
-          //   circleA.setPosition({
-          //     x: circleA.getPosition().x + (newPosA.x - circleA.getPosition().x) * 0.1,
-          //     y: circleA.getPosition().y + (newPosA.y - circleA.getPosition().y) * 0.1
-          // });
+            circleB.setPosition({
+              x: circleB.getPosition().x + (newPosB.x - circleB.getPosition().x) * 0.3,
+              y: circleB.getPosition().y + (newPosB.y - circleB.getPosition().y) * 0.3
+            });
 
-          //   circleB.setPosition({
-          //     x: circleB.getPosition().x + (newPosB.x - circleB.getPosition().x) * 0.1,
-          //     y: circleB.getPosition().y + (newPosB.y - circleB.getPosition().y) * 0.1
-          //   });
-
-          //   // Update state positions
-          //   setBubblePositions(prev => {
-          //     const newPositions = [...prev];
-          //     newPositions[j] = circleB.getPosition();
-          //     return newPositions;
-          //   });
-            
-          //   positionsChanged = true;
+            // Update state positions
+            setBubblePositions(prev => {
+              const newPositions = [...prev];
+              if (!circleA.getIsDragging()) {
+                newPositions[i] = circleA.getPosition();
+              }
+              if (!circleB.getIsDragging()) {
+                newPositions[j] = circleB.getPosition();
+              }
+              return newPositions;
+            });
           }
         }
       }
-    }, 1000 / 60); // 60 times per second
+    }, 1000 / 120); // 120 times per second
 
     return () => clearInterval(interval);
   }, []);
@@ -120,6 +120,32 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
 
   return (
     <View style={styles.container}>
+            {/* Center Home bubble */}
+      <View style={[
+        styles.centerBubble, 
+        { 
+          left: bubblePositions[0]?.x ?? 0, 
+          top: bubblePositions[0]?.y ?? 0 
+        }
+      ]}>
+        <Bubble 
+          label={items[0].label}
+          radius={items[0].radius}
+          originalX={bubblePositions[0]?.x ?? 0}
+          originalY={bubblePositions[0]?.y ?? 0}
+          getPosition={() => bubbleRefs.current[items[0].label]?.getPosition()}
+          setPosition={(pos) => bubbleRefs.current[items[0].label]?.setPosition(pos)}
+          ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
+            if (ref) {
+              bubbleRefs.current[items[0].label] = {
+                getPosition: ref.getPosition,
+                setPosition: ref.setPosition,
+                getIsDragging: ref.getIsDragging
+              };
+            }
+          }}
+        />
+      </View>
       {/* Surrounding bubbles in a wheel formation */}
       {items.slice(1).map((item, index) => {
         const actualIndex = index + 1;
@@ -141,11 +167,12 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
               originalY={bubblePositions[actualIndex]?.y ?? 0}
               getPosition={() => bubbleRefs.current[item.label]?.getPosition()}
               setPosition={(pos) => bubbleRefs.current[item.label]?.setPosition(pos)}
-              ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void } | null) => {
+              ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {
                     getPosition: ref.getPosition,
-                    setPosition: ref.setPosition
+                    setPosition: ref.setPosition,
+                    getIsDragging: ref.getIsDragging
                   };
                 }
               }}
@@ -153,32 +180,6 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
           </View>
         );
       })}
-
-      {/* Center Home bubble */}
-      <View style={[
-        styles.centerBubble, 
-        { 
-          left: bubblePositions[0]?.x ?? 0, 
-          top: bubblePositions[0]?.y ?? 0 
-        }
-      ]}>
-        <Bubble 
-          label={items[0].label}
-          radius={items[0].radius}
-          originalX={bubblePositions[0]?.x ?? 0}
-          originalY={bubblePositions[0]?.y ?? 0}
-          getPosition={() => bubbleRefs.current[items[0].label]?.getPosition()}
-          setPosition={(pos) => bubbleRefs.current[items[0].label]?.setPosition(pos)}
-          ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void } | null) => {
-            if (ref) {
-              bubbleRefs.current[items[0].label] = {
-                getPosition: ref.getPosition,
-                setPosition: ref.setPosition
-              };
-            }
-          }}
-        />
-      </View>
     </View>
   );
 };
