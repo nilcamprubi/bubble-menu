@@ -1,4 +1,10 @@
-import React, {useEffect, useRef} from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useImperativeHandle,
+  forwardRef
+} from 'react';
 import {Animated, View, StyleSheet, PanResponder, Text} from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
 
@@ -7,30 +13,31 @@ export interface BubbleProps {
   radius: number;
   originalX?: number;
   originalY?: number;
-  onPositionChange?: (position: { x: number; y: number }) => void;
+  getPosition?: () => Position;
+  setPosition?: (pos: Position) => void;
 }
 
-interface Position {
+export interface Position {
   x: number;
   y: number;
 }
 
-const Bubble = ({ label, radius, originalX = 0, originalY = 0, onPositionChange } : BubbleProps) => {
+const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
-  const currentPosition = useRef<Position>({ x: originalX, y: originalY });
+  const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
 
-  // Update current position when pan changes
-  useEffect(() => {
-    const listener = pan.addListener((value) => {
-      const newPos = {
-        x: originalX + value.x,
-        y: originalY + value.y
-      };
-      currentPosition.current = newPos;
-      onPositionChange?.(newPos);
-    });
-    return () => pan.removeListener(listener);
-  }, [pan, originalX, originalY, onPositionChange]);
+  useImperativeHandle(ref, () => ({
+    getPosition: () => {
+      // console.log("Retrieving position of ", label,": ", currentPosition.x, " ", currentPosition.y)
+      return currentPosition;
+    },
+    setPosition: (pos: Position) => setCurrentPosition(pos),
+  }));
+
+    // Initialize bubble refs and positions
+    useEffect(() => {
+      // console.log(label, " position: ", currentPosition.x, " ", currentPosition.y)
+    }, [currentPosition]);
 
   // Sets the movement of the bubble
   const panResponder = useRef(
@@ -39,23 +46,22 @@ const Bubble = ({ label, radius, originalX = 0, originalY = 0, onPositionChange 
       onMoveShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gesture) => {
         pan.setValue({
-          x: gesture.dx / 20,
-          y: gesture.dy / 20
+          x: gesture.dx,
+          y: gesture.dy,
+        });
+        setCurrentPosition({
+          x: originalX! + gesture.dx,
+          y: originalY! + gesture.dy
         });
       },
       onPanResponderRelease: () => {
         Animated.spring(pan, {
           toValue: {x: 0, y: 0},
           useNativeDriver: true,
-          friction: 5,
-          tension: 40
-        }).start(({ finished }) => {
-          if (finished) {
-            // Update position when spring animation completes
-            const newPos = { x: originalX, y: originalY };
-            currentPosition.current = newPos;
-            onPositionChange?.(newPos);
-          }
+        }).start();
+        setCurrentPosition({
+          x: originalX!,
+          y: originalY!
         });
       },
     }),
@@ -94,7 +100,7 @@ const Bubble = ({ label, radius, originalX = 0, originalY = 0, onPositionChange 
       </Shadow>
     </Animated.View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
