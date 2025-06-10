@@ -19,6 +19,14 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     )
   );
 
+  // Keep position within window bounds
+  const constrainToWindow = (pos: Position, radius: number): Position => {
+    return {
+      x: Math.max(0, Math.min(width - radius * 2, pos.x)),
+      y: Math.max(radius, Math.min(height - radius * 2, pos.y))
+    };
+  };
+
   // Calculate initial positions of bubbles
   const initialPositions = useMemo(() => {
     return items.map((item, index) => {
@@ -32,17 +40,30 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   }, [items, centerX, centerY]);
   const [bubblePositions, setBubblePositions] = useState<Position[]>(initialPositions);
 
-  // Keep position within window bounds
-  const constrainToWindow = (pos: Position, radius: number): Position => {
-    return {
-      x: Math.max(0, Math.min(width - radius * 2, pos.x)),
-      y: Math.max(radius, Math.min(height - radius * 2, pos.y))
-    };
-  };
-
   // Check if any bubble is being dragged
   const isAnyBubbleDragging = () => {
     return items.some(item => bubbleRefs.current[item.label]?.getIsDragging());
+  };
+
+  const checkCollision = (i: number, j: number) => {
+    const bubbles = bubbleRefs.current;
+    const circleA = bubbles[items[i].label];
+    const circleB = bubbles[items[j].label];
+
+    // Minimum distance between bubbles
+    const minDist = items[i].radius + items[j].radius + 10; 
+
+    // Distance between centers of bubbles
+    const dx = circleB.getPosition().x - circleA.getPosition().x;
+    const dy = circleB.getPosition().y - circleA.getPosition().y;
+    const distanceBetweenCenters = Math.hypot(dx, dy);
+
+    // Check if bubbles are overlapping
+    const areOverlapping = distanceBetweenCenters < minDist;
+
+    // if (areOverlapping) { console.log("Collision: ", items[i].label, " and ", items[j].label, " ", areOverlapping); }
+
+    return areOverlapping;
   };
 
   // Move bubbles back to their initial positions
@@ -79,22 +100,21 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
       // Collision detection
       for (let i = 0; i < items.length; i++) {
         for (let j = i + 1; j < items.length; j++) {
+          // Distance between centers of bubbles
+          const bubbles = bubbleRefs.current;
           const circleA = bubbles[items[i].label];
           const circleB = bubbles[items[j].label];
-
+      
           // Minimum distance between bubbles
           const minDist = items[i].radius + items[j].radius + 10; 
-
+      
           // Distance between centers of bubbles
           const dx = circleB.getPosition().x - circleA.getPosition().x;
           const dy = circleB.getPosition().y - circleA.getPosition().y;
           const distanceBetweenCenters = Math.hypot(dx, dy);
-
-          // Check if bubbles are overlapping
-          const areOverlapping = distanceBetweenCenters < minDist;
-
+          
           // If bubbles are overlapping, move them apart
-          if (areOverlapping && distanceBetweenCenters !== 0) {
+          if (checkCollision(i, j)) {
             const overlapDistance = minDist - distanceBetweenCenters;
             const percentOverlap = overlapDistance / minDist;
 
