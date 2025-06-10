@@ -26,44 +26,45 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   const initialPositions = useMemo(() => {
     return items.map((item, index) => {
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / 2;
-      const distance = index === 0 ? 0 : 110;
+      const distance = index === 0 ? 0 : 130;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
+
+      console.log("Bubble ", item.label, " initial position: ", { x, y });
   
       return constrainToWindow({ x, y }, item.radius);
     });
   }, [items, centerX, centerY]);
   const [bubblePositions, setBubblePositions] = useState<Position[]>(initialPositions);
 
-  // Check if any bubble is being dragged
-  const isAnyBubbleDragging = () => {
-    return items.some(item => isBubbleDragging(items.indexOf(item)));
-  };
-
+  // Check if a bubble is being dragged
   const isBubbleDragging = (i: number) => {
     return bubbleRefs.current[items[i].label]?.getIsDragging();
   };
 
+  // Get distance data between two bubbles
   const getDistanceData = (i: number, j: number) => {
     const bubbles = bubbleRefs.current;
-    const circleA = bubbles[items[i].label];
-    const circleB = bubbles[items[j].label];
-    const dx = circleB.getPosition().x - circleA.getPosition().x;
-    const dy = circleB.getPosition().y - circleA.getPosition().y;
+    const bubbleA = bubbles[items[i].label];
+    const bubbleB = bubbles[items[j].label];
+    const bubbleAPos = bubbleA.getPosition();
+    const bubbleBPos = bubbleB.getPosition();
+    const dx = bubbleBPos.x - bubbleAPos.x;
+    const dy = bubbleBPos.y - bubbleAPos.y;
 
     const minDist = items[i].radius + items[j].radius + 10; 
 
-    return { distanceBetweenCenters: Math.hypot(dx, dy), dx, dy, circleA, circleB, minDist };
+    return { distanceBetweenCenters: Math.hypot(dx, dy), dx, dy, bubbleA, bubbleB, minDist };
   };
 
   // Implementation
-  function checkCollision(i: number, j?: number): boolean {
+  function checkCollision(i: number, j?: number): { isColliding: boolean, index: number | undefined } {
     if (j !== undefined) {
       // Distance data fetching
       const { distanceBetweenCenters, minDist } = getDistanceData(i, j!);
       // Check if bubbles are overlapping
       const areOverlapping = distanceBetweenCenters < minDist;
-      return areOverlapping;
+      return { isColliding: areOverlapping, index: j };
     } else {
       for (let j = 0; j < items.length; j++) {
         if (i === j) {
@@ -75,90 +76,105 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
         const areOverlapping = distanceBetweenCenters < minDist;
         if (areOverlapping) {
           console.log("Collision: ", items[i].label, " and ", items[j].label, " ", areOverlapping);
-          return true;
+          return { isColliding: true, index: j };
         }
       }
-      return false;
+      return { isColliding: false, index: undefined };
     }
   }
 
+  // Handle collision between two bubbles
   const handleCollision = (i: number, j: number) => {
     // Distance data fetching
-    const { distanceBetweenCenters, minDist, circleA, circleB, dx, dy } = getDistanceData(i, j);
+    const { distanceBetweenCenters, minDist, bubbleA, bubbleB, dx, dy } = getDistanceData(i, j);
 
     const overlapDistance = minDist - distanceBetweenCenters;
     const percentOverlap = overlapDistance / minDist;
 
     // Update refs with constrained positions
+    const bubbleAPos = bubbleA.getPosition();
     const newPosA = constrainToWindow({
-      x: circleA.getPosition().x - dx * percentOverlap,
-      y: circleA.getPosition().y - dy * percentOverlap
+      x: bubbleAPos.x - dx * percentOverlap,
+      y: bubbleAPos.y - dy * percentOverlap
     }, items[i].radius);
 
+
+    const bubbleBPos = bubbleB.getPosition();
     const newPosB = constrainToWindow({
-      x: circleB.getPosition().x + dx * percentOverlap,
-      y: circleB.getPosition().y + dy * percentOverlap
+      x: bubbleBPos.x + dx * percentOverlap,
+      y: bubbleBPos.y + dy * percentOverlap
     }, items[j].radius);
 
     // Smooth the transition by interpolating between current and new positions
-    circleA.setPosition({
-      x: circleA.getPosition().x + (newPosA.x - circleA.getPosition().x) * 0.3,
-      y: circleA.getPosition().y + (newPosA.y - circleA.getPosition().y) * 0.3
+    bubbleA.setPosition({
+      x: bubbleAPos.x + (newPosA.x - bubbleAPos.x) * 0.3,
+      y: bubbleAPos.y + (newPosA.y - bubbleAPos.y) * 0.3
     });
 
-    circleB.setPosition({
-      x: circleB.getPosition().x + (newPosB.x - circleB.getPosition().x) * 0.3,
-      y: circleB.getPosition().y + (newPosB.y - circleB.getPosition().y) * 0.3
+    bubbleB.setPosition({
+      x: bubbleBPos.x + (newPosB.x - bubbleBPos.x) * 0.3,
+      y: bubbleBPos.y + (newPosB.y - bubbleBPos.y) * 0.3
     });
 
     // Update state positions
     setBubblePositions(prev => {
       const newPositions = [...prev];
-      if (!circleA.getIsDragging()) {
-        newPositions[i] = circleA.getPosition();
+      if (!bubbleA.getIsDragging()) {
+        newPositions[i] = bubbleA.getPosition();
       }
-      if (!circleB.getIsDragging()) {
-        newPositions[j] = circleB.getPosition();
+      if (!bubbleB.getIsDragging()) {
+        newPositions[j] = bubbleB.getPosition();
       }
       return newPositions;
     });
   };
 
+  // Check if any bubble is out of position
   const isAnyBubbleOutOfPosition = () => {
-    return items.some(item => {
+    let isOutOfPosition = false;
+    isOutOfPosition = items.some(item => {
       const index = items.indexOf(item);
       const initialPos = initialPositions[index];
+      const bubble = bubbleRefs.current[item.label];
+      const bubblePos = bubble.getPosition();
 
-      if (initialPos.x !== bubblePositions[index].x || initialPos.y !== bubblePositions[index].y) {
+      if (initialPos.x !== bubblePos.x || initialPos.y !== bubblePos.y) {
+        // console.log("Bubble ", item.label, " is out of position");
         return true;
+      } else {
+        // console.log("Bubble ", item.label, " is in position");
+        // console.log("Initial position: ", initialPos, " Bubble position: ", bubblePos);
       }
-
-      console.log("Bubble ", item.label, " is out of position");
-      return false;
     });
+    
+    // console.log("Is any bubble out of position: ", isOutOfPosition);
+    return isOutOfPosition;
   }
 
   // Move bubbles back to their initial positions
   const moveBubblesBackToInitialPositions = () => {
-    console.log("Moving bubbles back to initial positions");
+    // console.log("Moving bubbles back to initial positions");
       items.forEach(item => {
-        console.log("Bubble Dragging: ", isBubbleDragging(items.indexOf(item)), " Collision: ", checkCollision(items.indexOf(item)));
-        if (!isBubbleDragging(items.indexOf(item)) && !checkCollision(items.indexOf(item))) {
-          const index = items.indexOf(item);
-          const initialPos = initialPositions[index];
-          const circle = bubbleRefs.current[item.label];
+        const index = items.indexOf(item);
+        const collision = checkCollision(items.indexOf(item));
+        const movableBubble = !collision.isColliding || !isBubbleDragging(collision.index!);
 
-          if (!circle.getIsDragging()) {
-            circle.setPosition({
-              x: circle.getPosition().x + (initialPos.x - circle.getPosition().x) * 0.1,
-              y: circle.getPosition().y + (initialPos.y - circle.getPosition().y) * 0.1
+        if (!isBubbleDragging(items.indexOf(item)) && movableBubble) {
+          const initialPos = initialPositions[index];
+          const bubble = bubbleRefs.current[item.label];
+
+          if (!bubble.getIsDragging()) {
+            const bubblePos = bubble.getPosition();
+            bubble.setPosition({
+              x: bubblePos.x + (initialPos.x - bubblePos.x) * 0.1,
+              y: bubblePos.y + (initialPos.y - bubblePos.y) * 0.1
             });
           }
 
           setBubblePositions(prev => {
             const newPositions = [...prev];
-            if (!circle.getIsDragging()) {
-              newPositions[index] = circle.getPosition();
+            if (!bubble.getIsDragging()) {
+              newPositions[index] = bubble.getPosition();
             }
             return newPositions;
           });
@@ -173,7 +189,7 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
       for (let i = 0; i < items.length; i++) {
         for (let j = i + 1; j < items.length; j++) {
           // If bubbles are overlapping, move them apart
-          if (checkCollision(i, j)) {
+          if (checkCollision(i, j).isColliding) {
             handleCollision(i, j);
           } 
           if (isAnyBubbleOutOfPosition()) {
@@ -202,8 +218,6 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
           radius={items[0].radius}
           originalX={bubblePositions[0]?.x ?? 0}
           originalY={bubblePositions[0]?.y ?? 0}
-          getPosition={() => bubbleRefs.current[items[0].label]?.getPosition()}
-          setPosition={(pos) => bubbleRefs.current[items[0].label]?.setPosition(pos)}
           ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
             if (ref) {
               bubbleRefs.current[items[0].label] = {
@@ -234,8 +248,6 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
               radius={item.radius}
               originalX={bubblePositions[actualIndex]?.x ?? 0}
               originalY={bubblePositions[actualIndex]?.y ?? 0}
-              getPosition={() => bubbleRefs.current[item.label]?.getPosition()}
-              setPosition={(pos) => bubbleRefs.current[item.label]?.setPosition(pos)}
               ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {

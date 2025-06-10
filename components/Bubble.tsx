@@ -14,9 +14,6 @@ export interface BubbleProps {
   radius: number;
   originalX?: number;
   originalY?: number;
-  getPosition?: () => Position;
-  setPosition?: (pos: Position) => void;
-  setBubbleDragging?: (label: string) => void;
 }
 
 export interface Position {
