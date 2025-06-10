@@ -5,7 +5,7 @@ import React, {
   useImperativeHandle,
   forwardRef
 } from 'react';
-import {Animated, View, PanResponder, Text} from 'react-native';
+import {Animated, View, PanResponder, Text, Image} from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
 import { styles } from '../styles';
 
@@ -14,6 +14,8 @@ export interface BubbleProps {
   radius: number;
   originalX?: number;
   originalY?: number;
+  text?: string;
+  icon?: any; // Can be a require() image or a URL
 }
 
 export interface Position {
@@ -21,7 +23,7 @@ export interface Position {
   y: number;
 }
 
-const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, ref) => {
+const Bubble = forwardRef(({ label, radius, originalX, originalY, text,icon}: BubbleProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
   const [isDragging, setIsDragging] = useState(false);
@@ -48,8 +50,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
 
   // Log state changes
   useEffect(() => {
-    console.log("Dragging state changed for", label, ":", isDragging);
-
+    console.log("Dragging state changed for", label || "button", ":", isDragging);
   }, [isDragging]);
 
   // Sets the movement of the bubble
@@ -107,10 +108,29 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
               width: radius*2, 
               height: radius*2, 
               borderRadius: radius,
+              padding: icon ? 8 : 0,
             }
           ]}
         >
-          <Text style={styles.text}>{label}</Text>
+          {icon && (
+            <Image 
+              source={icon}
+              style={[
+                styles.icon,
+                { 
+                  width: radius * (text ? 0.8 : 1),
+                  height: radius * (text ? 0.8 : 1),
+                  marginBottom: 4
+                }
+              ]}
+            />
+          )}
+          {text && (
+            <Text style={[
+              styles.text,
+              { fontSize: icon ? 14 : 16 }
+            ]}>{text}</Text>
+          )}
         </View>
       </Shadow>
     </Animated.View>

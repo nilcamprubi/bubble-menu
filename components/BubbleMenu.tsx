@@ -5,10 +5,11 @@ import type { BubbleProps, Position } from './Bubble';
 import { styles } from '../styles';
 
 interface BubbleMenuProps {
-  items: BubbleProps[]
+  items: BubbleProps[] // Array of bubbles to display
+  menuRadius: number // Radius of the menu
 }
 
-const BubbleMenu = ({ items } : BubbleMenuProps) => {
+const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
   const { width, height } = Dimensions.get('window');
   const centerX = width / 2;
   const centerY = height / 2;
@@ -26,11 +27,12 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   const initialPositions = useMemo(() => {
     return items.map((item, index) => {
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / 2;
-      const distance = index === 0 ? 0 : 130;
+      const radius = menuRadius + 110; // Distance between bubbles, minimum distance is 110
+      const distance = index === 0 ? 0 : radius;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
 
-      console.log("Bubble ", item.label, " initial position: ", { x, y });
+      console.log("Bubble ", item.label, " initial position: ", { x: x + 100, y: y + 100 });
   
       return constrainToWindow({ x, y }, item.radius);
     });
@@ -52,7 +54,7 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     const dx = bubbleBPos.x - bubbleAPos.x;
     const dy = bubbleBPos.y - bubbleAPos.y;
 
-    const minDist = items[i].radius + items[j].radius + 10; 
+    const minDist = items[i].radius + items[j].radius; 
 
     return { distanceBetweenCenters: Math.hypot(dx, dy), dx, dy, bubbleA, bubbleB, minDist };
   };
@@ -106,15 +108,17 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     }, items[j].radius);
 
     // Smooth the transition by interpolating between current and new positions
-    bubbleA.setPosition({
-      x: bubbleAPos.x + (newPosA.x - bubbleAPos.x) * 0.3,
-      y: bubbleAPos.y + (newPosA.y - bubbleAPos.y) * 0.3
-    });
+    const updatedPosA = {
+        x: bubbleAPos.x + (newPosA.x - bubbleAPos.x) * 0.3,
+        y: bubbleAPos.y + (newPosA.y - bubbleAPos.y) * 0.3
+    };
+    bubbleA.setPosition(updatedPosA);
 
-    bubbleB.setPosition({
+    const updatedPosB = {
       x: bubbleBPos.x + (newPosB.x - bubbleBPos.x) * 0.3,
       y: bubbleBPos.y + (newPosB.y - bubbleBPos.y) * 0.3
-    });
+    };
+    bubbleB.setPosition(updatedPosB);
 
     // Update state positions
     setBubblePositions(prev => {
@@ -218,9 +222,11 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
           radius={items[0].radius}
           originalX={bubblePositions[0]?.x ?? 0}
           originalY={bubblePositions[0]?.y ?? 0}
+          text={items[0].text}
+          icon={items[0].icon}
           ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
             if (ref) {
-              bubbleRefs.current[items[0].label] = {
+              bubbleRefs.current[items[0].label || ""] = {
                 getPosition: ref.getPosition,
                 setPosition: ref.setPosition,
                 getIsDragging: ref.getIsDragging
@@ -248,6 +254,8 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
               radius={item.radius}
               originalX={bubblePositions[actualIndex]?.x ?? 0}
               originalY={bubblePositions[actualIndex]?.y ?? 0}
+              text={item.text}
+              icon={item.icon}
               ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {

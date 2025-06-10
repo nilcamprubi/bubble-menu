@@ -20,6 +20,10 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  icon: {
+    marginBottom: 8,
+    resizeMode: 'contain',
+  },
 
   // BubbleMenu styles
   menuContainer: {
