@@ -1,7 +1,8 @@
-import { StyleSheet, View, Dimensions } from 'react-native';
+import { View } from 'react-native';
 import Bubble from './components/Bubble';
 import type { BubbleProps } from './components/Bubble';
 import BubbleMenu from './components/BubbleMenu';
+import { styles } from './styles';
 
 const menuItems: BubbleProps[] = [ 
   { label: "Home", radius: 50 }, 
@@ -10,7 +11,7 @@ const menuItems: BubbleProps[] = [
   { label: "Tips", radius: 40 },
   { label: "Profile", radius: 40 },
   { label: "Order", radius: 40 },
-  { label: "Buy", radius: 40 } 
+  { label: "Buy", radius: 40 } ,
 ];
 
 export default function App() {
@@ -22,10 +23,3 @@ export default function App() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  }
-});

@@ -5,8 +5,9 @@ import React, {
   useImperativeHandle,
   forwardRef
 } from 'react';
-import {Animated, View, StyleSheet, PanResponder, Text} from 'react-native';
+import {Animated, View, PanResponder, Text} from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
+import { styles } from '../styles';
 
 export interface BubbleProps {
   label: string;
@@ -86,7 +87,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
   return (
     <Animated.View 
       style={[
-        styles.container,
+        styles.bubbleContainer,
         { 
           transform: [
             { translateX: pan.x },
@@ -111,26 +112,11 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
             }
           ]}
         >
-          <Text style={[styles.text]}>{label}</Text>
+          <Text style={styles.text}>{label}</Text>
         </View>
       </Shadow>
     </Animated.View>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-  },
-  circle: {
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 16,
-    color: '#333',
-  },
 });
 
 export default Bubble; 

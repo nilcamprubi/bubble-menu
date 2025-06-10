@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, Dimensions } from 'react-native';
 import Bubble from './Bubble'
 import type { BubbleProps, Position } from './Bubble';
+import { styles } from '../styles';
 
 interface BubbleMenuProps {
   items: BubbleProps[]
@@ -12,19 +13,17 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   const centerX = width / 2;
   const centerY = height / 2;
   const bubbleRefs = useRef<Record<string, { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean }>>({});
+  const [collisionMatrix, setCollisionMatrix] = useState<boolean[][]>(
+    Array.from({ length: items.length }, () =>
+      Array.from({ length: items.length }, () => false)
+    )
+  );
 
-    // Keep position within window bounds
-    const constrainToWindow = (pos: Position, radius: number): Position => {
-      return {
-        x: Math.max(0, Math.min(width - radius * 2, pos.x)),
-        y: Math.max(radius, Math.min(height - radius * 2, pos.y))
-      };
-    };
-
+  // Calculate initial positions of bubbles
   const initialPositions = useMemo(() => {
     return items.map((item, index) => {
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / 2;
-      const distance = index === 0 ? 0 : 130;
+      const distance = index === 0 ? 0 : 110;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
   
@@ -33,34 +32,44 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   }, [items, centerX, centerY]);
   const [bubblePositions, setBubblePositions] = useState<Position[]>(initialPositions);
 
-  const isAnyBubbleDragging = useMemo(() => {
-    console.log("isAnyBubbleDragging: ", items.some(item => bubbleRefs.current[item.label]?.getIsDragging()));
+  // Keep position within window bounds
+  const constrainToWindow = (pos: Position, radius: number): Position => {
+    return {
+      x: Math.max(0, Math.min(width - radius * 2, pos.x)),
+      y: Math.max(radius, Math.min(height - radius * 2, pos.y))
+    };
+  };
+
+  // Check if any bubble is being dragged
+  const isAnyBubbleDragging = () => {
     return items.some(item => bubbleRefs.current[item.label]?.getIsDragging());
-  }, [items]);
+  };
 
-  const isAnyBubbleOutOfPosition = useMemo(() => {
-    return items.some(item => {
-      const bubble = bubbleRefs.current[item.label];
-      if (!bubble) return false;
-      const currentPos = bubble.getPosition();
-      const initialPos = initialPositions[items.indexOf(item)];
-      return currentPos.x !== initialPos.x || currentPos.y !== initialPos.y;
-    });
-  }, [items, initialPositions]);
+  // Move bubbles back to their initial positions
+  const moveBubblesBackToInitialPositions = () => {
+    if ((!isAnyBubbleDragging())) {
+      items.forEach(item => {
+        const index = items.indexOf(item);
+        const initialPos = initialPositions[index];
+        const circle = bubbleRefs.current[item.label];
 
-  // Initialize bubble refs and positions
-  useEffect(() => {
-    const initialPositions = items.map((item, index) => {
-      const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI/2;
-      const distance = index === 0 ? 0 : 130;
-      const x = centerX + Math.cos(angle) * distance - item.radius;
-      const y = centerY + Math.sin(angle) * distance - item.radius;
-      
-      return constrainToWindow({ x, y }, item.radius);
-    });
+        if (!circle.getIsDragging()) {
+          circle.setPosition({
+            x: circle.getPosition().x + (initialPos.x - circle.getPosition().x) * 0.1,
+            y: circle.getPosition().y + (initialPos.y - circle.getPosition().y) * 0.1
+          });
+        }
 
-    setBubblePositions(initialPositions);
-  }, [items, centerX, centerY]);
+        setBubblePositions(prev => {
+          const newPositions = [...prev];
+          if (!circle.getIsDragging()) {
+            newPositions[index] = circle.getPosition();
+          }
+          return newPositions;
+        });
+      });
+    }
+  };
 
   // Collision detection
   useEffect(() => {
@@ -73,19 +82,19 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
           const circleA = bubbles[items[i].label];
           const circleB = bubbles[items[j].label];
 
-          if (!circleA || !circleB) continue;
+          // Minimum distance between bubbles
+          const minDist = items[i].radius + items[j].radius + 10; 
 
-          const minDist = items[i].radius + items[j].radius + 10;
-
+          // Distance between centers of bubbles
           const dx = circleB.getPosition().x - circleA.getPosition().x;
           const dy = circleB.getPosition().y - circleA.getPosition().y;
           const distanceBetweenCenters = Math.hypot(dx, dy);
+
+          // Check if bubbles are overlapping
           const areOverlapping = distanceBetweenCenters < minDist;
 
+          // If bubbles are overlapping, move them apart
           if (areOverlapping && distanceBetweenCenters !== 0) {
-            console.log("Collision detected: ", items[i].label, " and ", items[j].label);
-            console.log("Position ", items[i].label, ": ", circleA.getPosition().x, " ", circleA.getPosition().y);
-            console.log("Position ", items[j].label, ": ", circleB.getPosition().x, " ", circleB.getPosition().y);
             const overlapDistance = minDist - distanceBetweenCenters;
             const percentOverlap = overlapDistance / minDist;
 
@@ -123,38 +132,7 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
               return newPositions;
             });
           } 
-          
-          console.log("isAnyBubbleDragging: ", isAnyBubbleDragging, " isAnyBubbleOutOfPosition: ", isAnyBubbleOutOfPosition);
-          if ((!isAnyBubbleDragging) && (isAnyBubbleOutOfPosition)) {
-            console.log("Moving bubbles back to initial positions");
-            // Move bubbles back to their initial positions if not being dragged
-            if (!circleA.getIsDragging()) {
-              const initialPosA = initialPositions[i];
-              circleA.setPosition({
-                x: circleA.getPosition().x + (initialPosA.x - circleA.getPosition().x) * 0.1,
-                y: circleA.getPosition().y + (initialPosA.y - circleA.getPosition().y) * 0.1
-              });
-            }
-            if (!circleB.getIsDragging()) {
-              const initialPosB = initialPositions[j];
-              circleB.setPosition({
-                x: circleB.getPosition().x + (initialPosB.x - circleB.getPosition().x) * 0.1,
-                y: circleB.getPosition().y + (initialPosB.y - circleB.getPosition().y) * 0.1
-              });
-            }
-
-            // Update state positions
-            setBubblePositions(prev => {
-              const newPositions = [...prev];
-              if (!circleA.getIsDragging()) {
-                newPositions[i] = circleA.getPosition();
-              }
-              if (!circleB.getIsDragging()) {
-                newPositions[j] = circleB.getPosition();
-              }
-              return newPositions;
-            });
-          }
+          moveBubblesBackToInitialPositions();
         }
       }
     }, 1000 / 120); // 120 times per second
@@ -165,7 +143,7 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
 
   return (
     <View style={styles.container}>
-            {/* Center Home bubble */}
+      {/* Center Home bubble */}
       <View style={[
         styles.centerBubble, 
         { 
@@ -228,17 +206,5 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centerBubble: {
-    position: 'absolute',
-  },
-  bubbleContainer: {
-    position: 'absolute',
-  },
-});
 
 export default BubbleMenu; 
