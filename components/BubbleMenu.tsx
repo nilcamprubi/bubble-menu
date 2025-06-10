@@ -45,25 +45,69 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     return items.some(item => bubbleRefs.current[item.label]?.getIsDragging());
   };
 
-  const checkCollision = (i: number, j: number) => {
+  const getDistanceData = (i: number, j: number) => {
     const bubbles = bubbleRefs.current;
     const circleA = bubbles[items[i].label];
     const circleB = bubbles[items[j].label];
-
-    // Minimum distance between bubbles
-    const minDist = items[i].radius + items[j].radius + 10; 
-
-    // Distance between centers of bubbles
     const dx = circleB.getPosition().x - circleA.getPosition().x;
     const dy = circleB.getPosition().y - circleA.getPosition().y;
-    const distanceBetweenCenters = Math.hypot(dx, dy);
+
+    const minDist = items[i].radius + items[j].radius + 10; 
+
+    return { distanceBetweenCenters: Math.hypot(dx, dy), dx, dy, circleA, circleB, minDist };
+  };
+
+  const checkCollision = (i: number, j: number) => {
+    // Distance data fetching
+    const { distanceBetweenCenters, minDist } = getDistanceData(i, j);
 
     // Check if bubbles are overlapping
     const areOverlapping = distanceBetweenCenters < minDist;
 
     // if (areOverlapping) { console.log("Collision: ", items[i].label, " and ", items[j].label, " ", areOverlapping); }
-
     return areOverlapping;
+  };
+
+  const handleCollision = (i: number, j: number) => {
+    // Distance data fetching
+    const { distanceBetweenCenters, minDist, circleA, circleB, dx, dy } = getDistanceData(i, j);
+
+    const overlapDistance = minDist - distanceBetweenCenters;
+    const percentOverlap = overlapDistance / minDist;
+
+    // Update refs with constrained positions
+    const newPosA = constrainToWindow({
+      x: circleA.getPosition().x - dx * percentOverlap,
+      y: circleA.getPosition().y - dy * percentOverlap
+    }, items[i].radius);
+
+    const newPosB = constrainToWindow({
+      x: circleB.getPosition().x + dx * percentOverlap,
+      y: circleB.getPosition().y + dy * percentOverlap
+    }, items[j].radius);
+
+    // Smooth the transition by interpolating between current and new positions
+    circleA.setPosition({
+      x: circleA.getPosition().x + (newPosA.x - circleA.getPosition().x) * 0.3,
+      y: circleA.getPosition().y + (newPosA.y - circleA.getPosition().y) * 0.3
+    });
+
+    circleB.setPosition({
+      x: circleB.getPosition().x + (newPosB.x - circleB.getPosition().x) * 0.3,
+      y: circleB.getPosition().y + (newPosB.y - circleB.getPosition().y) * 0.3
+    });
+
+    // Update state positions
+    setBubblePositions(prev => {
+      const newPositions = [...prev];
+      if (!circleA.getIsDragging()) {
+        newPositions[i] = circleA.getPosition();
+      }
+      if (!circleB.getIsDragging()) {
+        newPositions[j] = circleB.getPosition();
+      }
+      return newPositions;
+    });
   };
 
   // Move bubbles back to their initial positions
@@ -94,63 +138,13 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
 
   // Collision detection
   useEffect(() => {
-    const interval = setInterval(() => {
-      const bubbles = bubbleRefs.current;
-      
+    const interval = setInterval(() => {      
       // Collision detection
       for (let i = 0; i < items.length; i++) {
         for (let j = i + 1; j < items.length; j++) {
-          // Distance between centers of bubbles
-          const bubbles = bubbleRefs.current;
-          const circleA = bubbles[items[i].label];
-          const circleB = bubbles[items[j].label];
-      
-          // Minimum distance between bubbles
-          const minDist = items[i].radius + items[j].radius + 10; 
-      
-          // Distance between centers of bubbles
-          const dx = circleB.getPosition().x - circleA.getPosition().x;
-          const dy = circleB.getPosition().y - circleA.getPosition().y;
-          const distanceBetweenCenters = Math.hypot(dx, dy);
-          
           // If bubbles are overlapping, move them apart
           if (checkCollision(i, j)) {
-            const overlapDistance = minDist - distanceBetweenCenters;
-            const percentOverlap = overlapDistance / minDist;
-
-            // Update refs with constrained positions
-            const newPosA = constrainToWindow({
-              x: circleA.getPosition().x - dx * percentOverlap,
-              y: circleA.getPosition().y - dy * percentOverlap
-            }, items[i].radius);
-
-            const newPosB = constrainToWindow({
-              x: circleB.getPosition().x + dx * percentOverlap,
-              y: circleB.getPosition().y + dy * percentOverlap
-            }, items[j].radius);
-
-            // Smooth the transition by interpolating between current and new positions
-            circleA.setPosition({
-              x: circleA.getPosition().x + (newPosA.x - circleA.getPosition().x) * 0.3,
-              y: circleA.getPosition().y + (newPosA.y - circleA.getPosition().y) * 0.3
-            });
-
-            circleB.setPosition({
-              x: circleB.getPosition().x + (newPosB.x - circleB.getPosition().x) * 0.3,
-              y: circleB.getPosition().y + (newPosB.y - circleB.getPosition().y) * 0.3
-            });
-
-            // Update state positions
-            setBubblePositions(prev => {
-              const newPositions = [...prev];
-              if (!circleA.getIsDragging()) {
-                newPositions[i] = circleA.getPosition();
-              }
-              if (!circleB.getIsDragging()) {
-                newPositions[j] = circleB.getPosition();
-              }
-              return newPositions;
-            });
+            handleCollision(i, j);
           } 
           moveBubblesBackToInitialPositions();
         }
