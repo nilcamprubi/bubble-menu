@@ -16,7 +16,7 @@ export interface BubbleProps {
   originalY?: number;
   getPosition?: () => Position;
   setPosition?: (pos: Position) => void;
-  getIsDragging?: () => boolean;
+  setBubbleDragging?: (label: string) => void;
 }
 
 export interface Position {
@@ -52,6 +52,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY}: BubbleProps, 
   // Log state changes
   useEffect(() => {
     console.log("Dragging state changed for", label, ":", isDragging);
+
   }, [isDragging]);
 
   // Sets the movement of the bubble

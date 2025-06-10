@@ -13,11 +13,6 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
   const centerX = width / 2;
   const centerY = height / 2;
   const bubbleRefs = useRef<Record<string, { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean }>>({});
-  const [collisionMatrix, setCollisionMatrix] = useState<boolean[][]>(
-    Array.from({ length: items.length }, () =>
-      Array.from({ length: items.length }, () => false)
-    )
-  );
 
   // Keep position within window bounds
   const constrainToWindow = (pos: Position, radius: number): Position => {
@@ -42,7 +37,11 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
 
   // Check if any bubble is being dragged
   const isAnyBubbleDragging = () => {
-    return items.some(item => bubbleRefs.current[item.label]?.getIsDragging());
+    return items.some(item => isBubbleDragging(items.indexOf(item)));
+  };
+
+  const isBubbleDragging = (i: number) => {
+    return bubbleRefs.current[items[i].label]?.getIsDragging();
   };
 
   const getDistanceData = (i: number, j: number) => {
@@ -57,16 +56,31 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     return { distanceBetweenCenters: Math.hypot(dx, dy), dx, dy, circleA, circleB, minDist };
   };
 
-  const checkCollision = (i: number, j: number) => {
-    // Distance data fetching
-    const { distanceBetweenCenters, minDist } = getDistanceData(i, j);
-
-    // Check if bubbles are overlapping
-    const areOverlapping = distanceBetweenCenters < minDist;
-
-    // if (areOverlapping) { console.log("Collision: ", items[i].label, " and ", items[j].label, " ", areOverlapping); }
-    return areOverlapping;
-  };
+  // Implementation
+  function checkCollision(i: number, j?: number): boolean {
+    if (j !== undefined) {
+      // Distance data fetching
+      const { distanceBetweenCenters, minDist } = getDistanceData(i, j!);
+      // Check if bubbles are overlapping
+      const areOverlapping = distanceBetweenCenters < minDist;
+      return areOverlapping;
+    } else {
+      for (let j = 0; j < items.length; j++) {
+        if (i === j) {
+          continue;
+        }
+        // Distance data fetching
+        const { distanceBetweenCenters, minDist } = getDistanceData(i, j);
+        // Check if bubbles are overlapping
+        const areOverlapping = distanceBetweenCenters < minDist;
+        if (areOverlapping) {
+          console.log("Collision: ", items[i].label, " and ", items[j].label, " ", areOverlapping);
+          return true;
+        }
+      }
+      return false;
+    }
+  }
 
   const handleCollision = (i: number, j: number) => {
     // Distance data fetching
@@ -110,30 +124,46 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
     });
   };
 
+  const isAnyBubbleOutOfPosition = () => {
+    return items.some(item => {
+      const index = items.indexOf(item);
+      const initialPos = initialPositions[index];
+
+      if (initialPos.x !== bubblePositions[index].x || initialPos.y !== bubblePositions[index].y) {
+        return true;
+      }
+
+      console.log("Bubble ", item.label, " is out of position");
+      return false;
+    });
+  }
+
   // Move bubbles back to their initial positions
   const moveBubblesBackToInitialPositions = () => {
-    if ((!isAnyBubbleDragging())) {
+    console.log("Moving bubbles back to initial positions");
       items.forEach(item => {
-        const index = items.indexOf(item);
-        const initialPos = initialPositions[index];
-        const circle = bubbleRefs.current[item.label];
+        console.log("Bubble Dragging: ", isBubbleDragging(items.indexOf(item)), " Collision: ", checkCollision(items.indexOf(item)));
+        if (!isBubbleDragging(items.indexOf(item)) && !checkCollision(items.indexOf(item))) {
+          const index = items.indexOf(item);
+          const initialPos = initialPositions[index];
+          const circle = bubbleRefs.current[item.label];
 
-        if (!circle.getIsDragging()) {
-          circle.setPosition({
-            x: circle.getPosition().x + (initialPos.x - circle.getPosition().x) * 0.1,
-            y: circle.getPosition().y + (initialPos.y - circle.getPosition().y) * 0.1
+          if (!circle.getIsDragging()) {
+            circle.setPosition({
+              x: circle.getPosition().x + (initialPos.x - circle.getPosition().x) * 0.1,
+              y: circle.getPosition().y + (initialPos.y - circle.getPosition().y) * 0.1
+            });
+          }
+
+          setBubblePositions(prev => {
+            const newPositions = [...prev];
+            if (!circle.getIsDragging()) {
+              newPositions[index] = circle.getPosition();
+            }
+            return newPositions;
           });
         }
-
-        setBubblePositions(prev => {
-          const newPositions = [...prev];
-          if (!circle.getIsDragging()) {
-            newPositions[index] = circle.getPosition();
-          }
-          return newPositions;
-        });
       });
-    }
   };
 
   // Collision detection
@@ -146,7 +176,9 @@ const BubbleMenu = ({ items } : BubbleMenuProps) => {
           if (checkCollision(i, j)) {
             handleCollision(i, j);
           } 
-          moveBubblesBackToInitialPositions();
+          if (isAnyBubbleOutOfPosition()) {
+            moveBubblesBackToInitialPositions();
+          }
         }
       }
     }, 1000 / 120); // 120 times per second
