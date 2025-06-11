@@ -5,9 +5,17 @@ import React, {
   useImperativeHandle,
   forwardRef
 } from 'react';
-import {Animated, View, PanResponder, Text, Image} from 'react-native';
+import {Animated, View, PanResponder, Text, Image, ViewStyle, TextStyle, ImageStyle} from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
 import { styles } from '../styles';
+
+export interface BubbleStyleProps {
+  container?: ViewStyle;
+  circle?: ViewStyle;
+  text?: TextStyle;
+  icon?: ImageStyle;
+  shadow?: boolean;
+}
 
 export interface BubbleProps {
   label: string;
@@ -16,6 +24,7 @@ export interface BubbleProps {
   originalY?: number;
   text?: string;
   icon?: any; // Can be a require() image or a URL
+  style?: BubbleStyleProps;
 }
 
 export interface Position {
@@ -23,7 +32,7 @@ export interface Position {
   y: number;
 }
 
-const Bubble = forwardRef(({ label, radius, originalX, originalY, text,icon}: BubbleProps, ref) => {
+const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, style }: BubbleProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
   const [isDragging, setIsDragging] = useState(false);
@@ -87,6 +96,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text,icon}: Bu
     <Animated.View 
       style={[
         styles.bubbleContainer,
+        style?.container,
         { 
           transform: [
             { translateX: pan.x },
@@ -96,14 +106,52 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text,icon}: Bu
       ]}
       {...panResponder.panHandlers}
     >
-      <Shadow
-        distance={5}
-        startColor="rgba(0, 0, 0, 0.1)"
-        offset={[0, 2]}
-      >
+      {style?.shadow !== false ? (
+        <Shadow
+          distance={5}
+          startColor="rgba(0, 0, 0, 0.1)"
+          offset={[0, 2]}
+        >
+          <View 
+            style={[
+              styles.circle, 
+              style?.circle,
+              { 
+                width: radius*2, 
+                height: radius*2, 
+                borderRadius: radius,
+                padding: icon ? 8 : 0,
+              }
+            ]}
+          >
+            {icon && (
+              <Image 
+                source={icon}
+                style={[
+                  styles.icon,
+                  style?.icon,
+                  { 
+                    width: radius * (text ? 0.8 : 1),
+                    height: radius * (text ? 0.8 : 1),
+                    marginBottom: 4
+                  }
+                ]}
+              />
+            )}
+            {text && (
+              <Text style={[
+                styles.text,
+                style?.text,
+                { fontSize: icon ? 14 : 16 }
+              ]}>{text}</Text>
+            )}
+          </View>
+        </Shadow>
+      ) : (
         <View 
           style={[
             styles.circle, 
+            style?.circle,
             { 
               width: radius*2, 
               height: radius*2, 
@@ -117,6 +165,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text,icon}: Bu
               source={icon}
               style={[
                 styles.icon,
+                style?.icon,
                 { 
                   width: radius * (text ? 0.8 : 1),
                   height: radius * (text ? 0.8 : 1),
@@ -128,11 +177,12 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text,icon}: Bu
           {text && (
             <Text style={[
               styles.text,
+              style?.text,
               { fontSize: icon ? 14 : 16 }
             ]}>{text}</Text>
           )}
         </View>
-      </Shadow>
+      )}
     </Animated.View>
   );
 });

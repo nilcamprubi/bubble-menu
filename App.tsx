@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import Bubble from './components/Bubble';
 import type { BubbleProps } from './components/Bubble';
 import BubbleMenu from './components/BubbleMenu';
+import type { BubbleMenuStyleProps } from './components/BubbleMenu';
 import { styles } from './styles';
 
 const menuItems: BubbleProps[] = [ 
@@ -14,12 +15,40 @@ const menuItems: BubbleProps[] = [
   { label: "Buy", text: "Buy", radius: 40, icon: require('./assets/home-icon.png') },
 ];
 
+const menuStyle: BubbleMenuStyleProps = {
+  container: {
+    backgroundColor: 'transparent',
+  },
+  centerBubble: {
+    backgroundColor: 'transparent',
+  },
+  menuBubbleContainer: {
+    backgroundColor: 'transparent',
+  },
+  bubble: {
+    circle: {
+      backgroundColor: '#ffffff',
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+    },
+    text: {
+      color: '#333333',
+      fontWeight: '500',
+    },
+    icon: {
+      tintColor: '#666666',
+    },
+  },
+  shadow: true,
+};
+
 export default function App() {
   return (
     <View style={styles.container}>
       <BubbleMenu
         items={menuItems}
         menuRadius={0}
+        style={menuStyle}
       />
     </View>
   );

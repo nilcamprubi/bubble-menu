@@ -1,15 +1,24 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { View, Dimensions } from 'react-native';
+import { View, Dimensions, ViewStyle } from 'react-native';
 import Bubble from './Bubble'
-import type { BubbleProps, Position } from './Bubble';
+import type { BubbleProps, Position, BubbleStyleProps } from './Bubble';
 import { styles } from '../styles';
+
+export interface BubbleMenuStyleProps {
+  container?: ViewStyle;
+  centerBubble?: ViewStyle;
+  menuBubbleContainer?: ViewStyle;
+  bubble?: BubbleStyleProps;
+  shadow?: boolean;
+}
 
 interface BubbleMenuProps {
   items: BubbleProps[] // Array of bubbles to display
   menuRadius: number // Radius of the menu
+  style?: BubbleMenuStyleProps // Style for the menu and its bubbles
 }
 
-const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
+const BubbleMenu = ({ items, menuRadius, style } : BubbleMenuProps) => {
   const { width, height } = Dimensions.get('window');
   const centerX = width / 2;
   const centerY = height / 2;
@@ -145,9 +154,6 @@ const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
       if (initialPos.x !== bubblePos.x || initialPos.y !== bubblePos.y) {
         // console.log("Bubble ", item.label, " is out of position");
         return true;
-      } else {
-        // console.log("Bubble ", item.label, " is in position");
-        // console.log("Initial position: ", initialPos, " Bubble position: ", bubblePos);
       }
     });
     
@@ -208,10 +214,11 @@ const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
 
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style?.container]}>
       {/* Center Home bubble */}
       <View style={[
         styles.centerBubble, 
+        style?.centerBubble,
         { 
           left: bubblePositions[0]?.x ?? 0, 
           top: bubblePositions[0]?.y ?? 0 
@@ -224,6 +231,10 @@ const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
           originalY={bubblePositions[0]?.y ?? 0}
           text={items[0].text}
           icon={items[0].icon}
+          style={{
+            ...style?.bubble,
+            shadow: style?.shadow
+          }}
           ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
             if (ref) {
               bubbleRefs.current[items[0].label || ""] = {
@@ -243,6 +254,7 @@ const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
             key={item.label}
             style={[
               styles.bubbleContainer,
+              style?.menuBubbleContainer,
               {
                 left: bubblePositions[actualIndex]?.x ?? 0,
                 top: bubblePositions[actualIndex]?.y ?? 0,
@@ -256,6 +268,10 @@ const BubbleMenu = ({ items, menuRadius } : BubbleMenuProps) => {
               originalY={bubblePositions[actualIndex]?.y ?? 0}
               text={item.text}
               icon={item.icon}
+              style={{
+                ...style?.bubble,
+                shadow: style?.shadow
+              }}
               ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {
