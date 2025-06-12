@@ -38,7 +38,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     return items.map((item, index) => {
       const menuRotation = 4; // Change this to rotate the bubbles
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / menuRotation;
-      const radius = menuRadius + 110; // Distance between bubbles, minimum distance is 110
+      const radius = menuRadius + 130; // Distance between bubbles, minimum distance is 110
       const distance = index === 0 ? 0 : radius;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
@@ -55,6 +55,10 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     return bubbleRefs.current[items[i].label]?.getIsDragging();
   };
 
+  const isAnyBubbleDragging = () => {
+    return items.some(item => isBubbleDragging(items.indexOf(item)));
+  };
+
   // Get distance data between two bubbles
   const getDistanceData = (i: number, j: number) => {
     const bubbles = bubbleRefs.current;
@@ -65,7 +69,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     const dx = bubbleBPos.x - bubbleAPos.x;
     const dy = bubbleBPos.y - bubbleAPos.y;
 
-    const minDist = items[i].radius + items[j].radius; 
+    const minDist = items[i].radius + items[j].radius + 20; 
 
     return { distanceBetweenCenters: Math.hypot(dx, dy), dx, dy, bubbleA, bubbleB, minDist };
   };
@@ -153,13 +157,20 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
       const bubble = bubbleRefs.current[item.label];
       const bubblePos = bubble.getPosition();
 
-      if (initialPos.x !== bubblePos.x || initialPos.y !== bubblePos.y) {
-        // console.log("Bubble ", item.label, " is out of position");
+      // Round to 2 decimal places for comparison
+      const roundedInitialX = Math.round(initialPos.x * 100) / 100;
+      const roundedInitialY = Math.round(initialPos.y * 100) / 100;
+      const roundedBubbleX = Math.round(bubblePos.x * 100) / 100;
+      const roundedBubbleY = Math.round(bubblePos.y * 100) / 100;
+
+      if (roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY) {
+        console.log("Bubble ", item.label, " is out of position");
+        console.log("Initial position: ", { x: roundedInitialX, y: roundedInitialY });
+        console.log("Bubble position: ", { x: roundedBubbleX, y: roundedBubbleY });
         return true;
       }
     });
     
-    // console.log("Is any bubble out of position: ", isOutOfPosition);
     return isOutOfPosition;
   }
 
@@ -196,22 +207,24 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
 
   // Collision detection
   useEffect(() => {
-    const interval = setInterval(() => {      
-      // Collision detection
-      for (let i = 0; i < items.length; i++) {
-        for (let j = i + 1; j < items.length; j++) {
-          // If bubbles are overlapping, move them apart
-          if (checkCollision(i, j).isColliding) {
-            handleCollision(i, j);
-          } 
-          if (isAnyBubbleOutOfPosition()) {
-            moveBubblesBackToInitialPositions();
+      const interval = setInterval(() => { 
+        if (isAnyBubbleDragging() || isAnyBubbleOutOfPosition()) { 
+          console.log("Collision detection running");
+          // Collision detection
+          for (let i = 0; i < items.length; i++) {
+            for (let j = i + 1; j < items.length; j++) {
+              // If bubbles are overlapping, move them apart
+              if (checkCollision(i, j).isColliding) {
+                handleCollision(i, j);
+              } 
+              if (isAnyBubbleOutOfPosition()) {
+                moveBubblesBackToInitialPositions();
+              }
+            }
           }
         }
-      }
-    }, 1000 / 60); // 60 times per second
-
-    return () => clearInterval(interval);
+      }, 1000 / 60); // 60 times per second
+      return () => clearInterval(interval);
   }, []);
 
 
