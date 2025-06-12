@@ -1,18 +1,19 @@
 import { View } from 'react-native';
-import type { BubbleProps } from './components/CustomBubble';
+import type { BubbleProps } from './components/BubbleWrapper';
 import BubbleMenu from './components/BubbleMenu';
 import type { BubbleMenuStyleProps } from './components/BubbleMenu';
 import { styles } from './styles';
 import DefaultBubble from './components/DefaultBubble';
+import AhaBubble from './components/AhaBubble';
+
+const radius = 50;
 
 const menuItems: BubbleProps[] = [ 
-  { label: "Home", text: "Home", radius: 50, icon: require('./assets/home-icon.png') }, 
-  { label: "Diets", text: "Diets", radius: 40 }, 
-  { label: "Recipes", text: "Recipes", radius: 40, icon: require('./assets/home-icon.png') }, 
-  { label: "Tips", text: "Tips", radius: 40 },
-  { label: "Profile", text: "Profile", radius: 40, icon: require('./assets/home-icon.png') },
-  { label: "Order", text: "Order", radius: 40 },
-  { label: "Buy", text: "Buy", radius: 40, icon: require('./assets/home-icon.png') },
+  { label: "Belleza", text: "Belleza", radius: radius, icon: require('./assets/belleza-icon.png') }, 
+  { label: "Cerrajería", text: "Cerrajería", radius: radius, icon: require('./assets/cerrajeria-icon.png') },
+  { label: "Residencia", text: "Residencia", radius: radius, icon: require('./assets/residencia-icon.png') },
+  { label: "Cuidados", text: "Cuidados", radius: radius, icon: require('./assets/cuidados-icon.png') }, 
+  { label: "Masajista", text: "Masajista", radius: radius, icon: require('./assets/masajistas-icon.png') }, 
 ];
 
 const menuStyle: BubbleMenuStyleProps = {
@@ -38,7 +39,6 @@ const menuStyle: BubbleMenuStyleProps = {
     icon: {
     },
   },
-  shadow: true,
 };
 
 export default function App() {
@@ -46,9 +46,9 @@ export default function App() {
     <View style={styles.container}>
       <BubbleMenu
         items={menuItems}
-        menuRadius={0}
+        menuRadius={10}
         style={menuStyle}
-        bubbleComponent={DefaultBubble}
+        bubbleComponent={AhaBubble}
       />
     </View>
   );

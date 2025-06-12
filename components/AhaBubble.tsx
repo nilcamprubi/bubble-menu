@@ -28,14 +28,9 @@ export interface Position {
   y: number;
 }
 
-const DefaultBubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, ref) => {
+const Bubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, ref) => {
 
   return (
-        <Shadow
-          distance={5}
-          startColor="rgba(0, 0, 0, 0.1)"
-          offset={[0, 2]}
-        >
           <View 
             style={[
               styles.circle, 
@@ -43,11 +38,22 @@ const DefaultBubble = forwardRef(({ label, radius, text, icon, style }: BubblePr
               { 
                 width: radius*2, 
                 height: radius*2, 
-                borderRadius: radius,
+                borderRadius: 42,
+                transform: [{ rotate: '45deg' }],
                 padding: icon ? 8 : 0,
+                backgroundColor: '#171b38',
+                borderWidth: 0,
               }
             ]}
           >
+            <View 
+              style={{ 
+                transform: [{ rotate: '-45deg' }],
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
             {icon && (
               <Image 
                 source={icon}
@@ -66,12 +72,12 @@ const DefaultBubble = forwardRef(({ label, radius, text, icon, style }: BubblePr
               <Text style={[
                 styles.text,
                 style?.text,
-                { fontSize: icon ? radius/3.6 : 16 } // font size adapts to the radius of the bubble and the icon
+                { fontSize: icon ? radius/3.6 : 16, color: '#CBD22C' } // font size adapts to the radius of the bubble and the icon
               ]}>{text}</Text>
             )}
+            </View>
           </View>
-        </Shadow>
       ) 
 });
 
-export default DefaultBubble; 
+export default Bubble; 

@@ -5,7 +5,7 @@ import React, {
   useImperativeHandle,
   forwardRef
 } from 'react';
-import {Animated, PanResponder, ViewStyle, TextStyle, ImageStyle} from 'react-native';
+import {Animated, PanResponder, ViewStyle, TextStyle, ImageStyle, TouchableOpacity} from 'react-native';
 import { styles } from '../styles';
 import DefaultBubble from './DefaultBubble';
 
@@ -14,7 +14,6 @@ export interface BubbleStyleProps {
   circle?: ViewStyle;
   text?: TextStyle;
   icon?: ImageStyle;
-  shadow?: boolean;
 }
 
 export interface BubbleProps {
@@ -33,7 +32,7 @@ export interface Position {
   y: number;
 }
 
-const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, style, bubbleComponent }: BubbleProps, ref) => {
+const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, icon, style, bubbleComponent }: BubbleProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
   const [isDragging, setIsDragging] = useState(false);
@@ -107,6 +106,10 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, st
       ]}
       {...panResponder.panHandlers}
     >
+      <TouchableOpacity onPress={() => {
+        console.log("Bubble ", label, " pressed");
+      }}>
+
       {React.createElement(bubbleComponent || DefaultBubble, {
         label,
         radius,
@@ -116,8 +119,11 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, st
         icon,
         style
       })}
+
+      </TouchableOpacity>
+
     </Animated.View>
   );
 });
 
-export default Bubble; 
+export default BubbleWrapper; 
