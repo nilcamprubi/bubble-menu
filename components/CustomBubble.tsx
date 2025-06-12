@@ -25,6 +25,7 @@ export interface BubbleProps {
   text?: string;
   icon?: any; // Can be a require() image or a URL
   style?: BubbleStyleProps;
+  bubbleComponent?: React.ComponentType<BubbleProps>;
 }
 
 export interface Position {
@@ -32,7 +33,7 @@ export interface Position {
   y: number;
 }
 
-const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, style }: BubbleProps, ref) => {
+const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, style, bubbleComponent }: BubbleProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
   const [isDragging, setIsDragging] = useState(false);
@@ -106,15 +107,15 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, st
       ]}
       {...panResponder.panHandlers}
     >
-      <DefaultBubble 
-        label={label} 
-        radius={radius} 
-        originalX={originalX} 
-        originalY={originalY} 
-        text={text} 
-        icon={icon} 
-        style={style} 
-      />
+      {React.createElement(bubbleComponent, {
+        label,
+        radius,
+        originalX,
+        originalY,
+        text,
+        icon,
+        style
+      })}
     </Animated.View>
   );
 });

@@ -3,6 +3,8 @@ import { View, Dimensions, ViewStyle } from 'react-native';
 import Bubble from './CustomBubble'
 import type { BubbleProps, Position, BubbleStyleProps } from './CustomBubble';
 import { styles } from '../styles';
+import DefaultBubble from './DefaultBubble';
+
 
 export interface BubbleMenuStyleProps {
   container?: ViewStyle;
@@ -235,6 +237,7 @@ const BubbleMenu = ({ items, menuRadius, style } : BubbleMenuProps) => {
             ...style?.bubble,
             shadow: style?.shadow
           }}
+          bubbleComponent={DefaultBubble}
           ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
             if (ref) {
               bubbleRefs.current[items[0].label || ""] = {
@@ -272,6 +275,7 @@ const BubbleMenu = ({ items, menuRadius, style } : BubbleMenuProps) => {
                 ...style?.bubble,
                 shadow: style?.shadow
               }}
+              bubbleComponent={DefaultBubble}
               ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {

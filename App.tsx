@@ -4,6 +4,7 @@ import type { BubbleProps } from './components/CustomBubble';
 import BubbleMenu from './components/BubbleMenu';
 import type { BubbleMenuStyleProps } from './components/BubbleMenu';
 import { styles } from './styles';
+import DefaultBubble from './components/DefaultBubble';
 
 const menuItems: BubbleProps[] = [ 
   { label: "Home", text: "Home", radius: 50, icon: require('./assets/home-icon.png') }, 
