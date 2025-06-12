@@ -9,6 +9,7 @@ import {Animated, PanResponder, ViewStyle, TextStyle, ImageStyle, TouchableOpaci
 import { styles } from '../styles';
 import DefaultBubble from './DefaultBubble';
 
+// Style interfaces for the bubble component
 export interface BubbleStyleProps {
   container?: ViewStyle;
   circle?: ViewStyle;
@@ -16,6 +17,7 @@ export interface BubbleStyleProps {
   icon?: ImageStyle;
 }
 
+// Props for the bubble component
 export interface BubbleProps {
   label: string;
   radius: number;
@@ -27,6 +29,7 @@ export interface BubbleProps {
   bubbleComponent?: React.ComponentType<BubbleProps>;
 }
 
+// Props for the bubble wrapper component
 export interface BubbleWrapperProps {
   label: string;
   radius: number;
@@ -39,42 +42,53 @@ export interface BubbleWrapperProps {
   setIsAnyBubbleDragging: (isDragging: boolean) => void;
 }
 
+// Position interface for bubble coordinates
 export interface Position {
   x: number;
   y: number;
 }
 
-const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, icon, style, bubbleComponent, setIsAnyBubbleDragging }: BubbleWrapperProps, ref) => {
+// BubbleWrapper Component: Creates a draggable bubble with custom styling and behavior
+const BubbleWrapper = forwardRef(({ 
+  label, 
+  radius, 
+  originalX, 
+  originalY, 
+  text, 
+  icon, 
+  style, 
+  bubbleComponent, 
+  setIsAnyBubbleDragging 
+}: BubbleWrapperProps, ref) => {
+  // Animation and state management
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
   const [isDragging, setIsDragging] = useState(false);
 
+  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
-    getPosition: () => {
-      // console.log("Retrieving position of ", label,": ", currentPosition.x, " ", currentPosition.y)
-      return currentPosition;
-    },
+    getPosition: () => currentPosition,
     setPosition: (pos: Position) => {
       if (!isDragging) {
         setCurrentPosition(pos);
       }
     },
-    getIsDragging: () => {
-      return isDragging;
-    }
+    getIsDragging: () => isDragging
   }));
 
-  // Log state changes
+  // Update parent component when dragging state changes
   useEffect(() => {
-    console.log("Dragging state changed for", label || "button", ":", isDragging);
     setIsAnyBubbleDragging(isDragging);
   }, [isDragging]);
 
-  // Sets the movement of the bubble
+  // Pan responder for drag and drop functionality
   const panResponder = useRef(
     PanResponder.create({
+      // Start dragging on touch
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+
+      // Handle movement
       onPanResponderMove: (_, gesture) => {
         pan.setValue({
           x: gesture.dx,
@@ -86,7 +100,10 @@ const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, i
         });
         setIsDragging(true);
       },
+
+      // Handle release
       onPanResponderRelease: () => {
+        // Animate back to original position
         Animated.spring(pan, {
           toValue: {x: 0, y: 0},
           useNativeDriver: true,
@@ -100,6 +117,7 @@ const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, i
     }),
   ).current;
 
+  // Render the bubble with animation and touch handling
   return (
     <Animated.View 
       style={[
@@ -117,19 +135,16 @@ const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, i
       <TouchableOpacity onPress={() => {
         console.log("Bubble ", label, " pressed");
       }}>
-
-      {React.createElement(bubbleComponent || DefaultBubble, {
-        label,
-        radius,
-        originalX,
-        originalY,
-        text,
-        icon,
-        style,
-      })}
-
+        {React.createElement(bubbleComponent || DefaultBubble, {
+          label,
+          radius,
+          originalX,
+          originalY,
+          text,
+          icon,
+          style,
+        })}
       </TouchableOpacity>
-
     </Animated.View>
   );
 });
