@@ -4,14 +4,7 @@ import React, {
 import { View, Text, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
 import { styles } from '../styles';
-
-export interface BubbleStyleProps {
-  container?: ViewStyle;
-  circle?: ViewStyle;
-  text?: TextStyle;
-  icon?: ImageStyle;
-  shadow?: boolean;
-}
+import { BubbleStyleProps } from './BubbleWrapper';
 
 export interface BubbleProps {
   label: string;
@@ -21,11 +14,6 @@ export interface BubbleProps {
   text?: string;
   icon?: any; // Can be a require() image or a URL
   style?: BubbleStyleProps;
-}
-
-export interface Position {
-  x: number;
-  y: number;
 }
 
 const Bubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, ref) => {

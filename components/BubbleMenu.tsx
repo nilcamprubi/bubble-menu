@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Dimensions, ViewStyle } from 'react-native';
 import BubbleWrapper from './BubbleWrapper'
-import type { BubbleProps, Position, BubbleStyleProps } from './BubbleWrapper';
+import type { BubbleProps, BubbleWrapperProps, Position, BubbleStyleProps } from './BubbleWrapper';
 import { styles } from '../styles';
 
 
@@ -13,7 +13,7 @@ export interface BubbleMenuStyleProps {
 }
 
 interface BubbleMenuProps {
-  items: BubbleProps[] // Array of bubbles to display
+  items: BubbleWrapperProps[] // Array of bubbles to display
   menuRadius: number // Radius of the menu
   style?: BubbleMenuStyleProps // Style for the menu and its bubbles
   bubbleComponent?: React.ComponentType<BubbleProps>;
@@ -24,6 +24,12 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
   const centerX = width / 2;
   const centerY = height / 2;
   const bubbleRefs = useRef<Record<string, { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean }>>({});
+  const [isAnyBubbleDragging, setIsAnyBubbleDragging] = useState(false);
+  const [isBubbleOutOfPosition, setIsBubbleOutOfPosition] = useState([]);
+
+  useEffect(() => {
+    console.log("isAnyBubbleDragging: ", isAnyBubbleDragging);
+  }, [isAnyBubbleDragging]);
 
   // Keep position within window bounds
   const constrainToWindow = (pos: Position, radius: number): Position => {
@@ -53,10 +59,6 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
   // Check if a bubble is being dragged
   const isBubbleDragging = (i: number) => {
     return bubbleRefs.current[items[i].label]?.getIsDragging();
-  };
-
-  const isAnyBubbleDragging = () => {
-    return items.some(item => isBubbleDragging(items.indexOf(item)));
   };
 
   // Get distance data between two bubbles
@@ -205,8 +207,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
   // Collision detection
   useEffect(() => {
       const interval = setInterval(() => { 
-        if (isAnyBubbleDragging() || isAnyBubbleOutOfPosition()) { 
-          console.log("Collision detection running");
+        if (isAnyBubbleDragging || isAnyBubbleOutOfPosition()) { 
           // Collision detection
           for (let i = 0; i < items.length; i++) {
             for (let j = i + 1; j < items.length; j++) {
@@ -247,6 +248,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
             ...style?.bubble,
           }}
           bubbleComponent={bubbleComponent}
+          setIsAnyBubbleDragging={setIsAnyBubbleDragging}
           ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
             if (ref) {
               bubbleRefs.current[items[0].label || ""] = {
@@ -284,6 +286,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
                 ...style?.bubble,
               }}
               bubbleComponent={bubbleComponent}
+              setIsAnyBubbleDragging={setIsAnyBubbleDragging}
               ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {

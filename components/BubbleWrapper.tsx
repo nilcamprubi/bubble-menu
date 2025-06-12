@@ -27,12 +27,24 @@ export interface BubbleProps {
   bubbleComponent?: React.ComponentType<BubbleProps>;
 }
 
+export interface BubbleWrapperProps {
+  label: string;
+  radius: number;
+  originalX?: number;
+  originalY?: number;
+  text?: string;
+  icon?: any; // Can be a require() image or a URL
+  style?: BubbleStyleProps;
+  bubbleComponent?: React.ComponentType<BubbleProps>;
+  setIsAnyBubbleDragging: (isDragging: boolean) => void;
+}
+
 export interface Position {
   x: number;
   y: number;
 }
 
-const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, icon, style, bubbleComponent }: BubbleProps, ref) => {
+const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, icon, style, bubbleComponent, setIsAnyBubbleDragging }: BubbleWrapperProps, ref) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
   const [isDragging, setIsDragging] = useState(false);
@@ -52,14 +64,10 @@ const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, i
     }
   }));
 
-    // Initialize bubble refs and positions
-    useEffect(() => {
-      // console.log(label, " position: ", currentPosition.x, " ", currentPosition.y)
-    }, [currentPosition]);
-
   // Log state changes
   useEffect(() => {
     console.log("Dragging state changed for", label || "button", ":", isDragging);
+    setIsAnyBubbleDragging(isDragging);
   }, [isDragging]);
 
   // Sets the movement of the bubble
@@ -117,7 +125,7 @@ const BubbleWrapper = forwardRef(({ label, radius, originalX, originalY, text, i
         originalY,
         text,
         icon,
-        style
+        style,
       })}
 
       </TouchableOpacity>
