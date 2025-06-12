@@ -209,7 +209,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
           }
         }
       }
-    }, 1000 / 120); // 120 times per second
+    }, 1000 / 60); // 60 times per second
 
     return () => clearInterval(interval);
   }, []);
