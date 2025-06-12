@@ -5,9 +5,9 @@ import React, {
   useImperativeHandle,
   forwardRef
 } from 'react';
-import {Animated, View, PanResponder, Text, Image, ViewStyle, TextStyle, ImageStyle} from 'react-native';
-import { Shadow } from 'react-native-shadow-2';
+import {Animated, PanResponder, ViewStyle, TextStyle, ImageStyle} from 'react-native';
 import { styles } from '../styles';
+import DefaultBubble from './DefaultBubble';
 
 export interface BubbleStyleProps {
   container?: ViewStyle;
@@ -106,83 +106,15 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, st
       ]}
       {...panResponder.panHandlers}
     >
-      {style?.shadow !== false ? (
-        <Shadow
-          distance={5}
-          startColor="rgba(0, 0, 0, 0.1)"
-          offset={[0, 2]}
-        >
-          <View 
-            style={[
-              styles.circle, 
-              style?.circle,
-              { 
-                width: radius*2, 
-                height: radius*2, 
-                borderRadius: radius,
-                padding: icon ? 8 : 0,
-              }
-            ]}
-          >
-            {icon && (
-              <Image 
-                source={icon}
-                style={[
-                  styles.icon,
-                  style?.icon,
-                  { 
-                    width: radius * (text ? 0.8 : 1),
-                    height: radius * (text ? 0.8 : 1),
-                    marginBottom: 4
-                  }
-                ]}
-              />
-            )}
-            {text && (
-              <Text style={[
-                styles.text,
-                style?.text,
-                { fontSize: icon ? 14 : 16 }
-              ]}>{text}</Text>
-            )}
-          </View>
-        </Shadow>
-      ) : (
-        <View 
-          style={[
-            styles.circle, 
-            style?.circle,
-            { 
-              width: radius*2, 
-              height: radius*2, 
-              borderRadius: radius,
-              padding: icon ? 8 : 0,
-            }
-          ]}
-        >
-          {icon && (
-            <Image 
-              source={icon}
-              style={[
-                styles.icon,
-                style?.icon,
-                { 
-                  width: radius * (text ? 0.8 : 1),
-                  height: radius * (text ? 0.8 : 1),
-                  marginBottom: 4
-                }
-              ]}
-            />
-          )}
-          {text && (
-            <Text style={[
-              styles.text,
-              style?.text,
-              { fontSize: icon ? 14 : 16 }
-            ]}>{text}</Text>
-          )}
-        </View>
-      )}
+      <DefaultBubble 
+        label={label} 
+        radius={radius} 
+        originalX={originalX} 
+        originalY={originalY} 
+        text={text} 
+        icon={icon} 
+        style={style} 
+      />
     </Animated.View>
   );
 });

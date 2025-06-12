@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Dimensions, ViewStyle } from 'react-native';
-import Bubble from './Bubble'
-import type { BubbleProps, Position, BubbleStyleProps } from './Bubble';
+import Bubble from './CustomBubble'
+import type { BubbleProps, Position, BubbleStyleProps } from './CustomBubble';
 import { styles } from '../styles';
 
 export interface BubbleMenuStyleProps {

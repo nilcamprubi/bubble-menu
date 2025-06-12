@@ -1,6 +1,6 @@
 import { View } from 'react-native';
-import Bubble from './components/Bubble';
-import type { BubbleProps } from './components/Bubble';
+import Bubble from './components/CustomBubble';
+import type { BubbleProps } from './components/CustomBubble';
 import BubbleMenu from './components/BubbleMenu';
 import type { BubbleMenuStyleProps } from './components/BubbleMenu';
 import { styles } from './styles';
@@ -36,7 +36,6 @@ const menuStyle: BubbleMenuStyleProps = {
       fontWeight: '500',
     },
     icon: {
-      tintColor: '#666666',
     },
   },
   shadow: true,
