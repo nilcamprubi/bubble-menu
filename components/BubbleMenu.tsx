@@ -164,9 +164,6 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
       const roundedBubbleY = Math.round(bubblePos.y * 100) / 100;
 
       if (roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY) {
-        console.log("Bubble ", item.label, " is out of position");
-        console.log("Initial position: ", { x: roundedInitialX, y: roundedInitialY });
-        console.log("Bubble position: ", { x: roundedBubbleX, y: roundedBubbleY });
         return true;
       }
     });
