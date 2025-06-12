@@ -1,5 +1,4 @@
 import { View } from 'react-native';
-import Bubble from './components/CustomBubble';
 import type { BubbleProps } from './components/CustomBubble';
 import BubbleMenu from './components/BubbleMenu';
 import type { BubbleMenuStyleProps } from './components/BubbleMenu';
@@ -49,6 +48,7 @@ export default function App() {
         items={menuItems}
         menuRadius={0}
         style={menuStyle}
+        bubbleComponent={DefaultBubble}
       />
     </View>
   );

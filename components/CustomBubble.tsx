@@ -107,7 +107,7 @@ const Bubble = forwardRef(({ label, radius, originalX, originalY, text, icon, st
       ]}
       {...panResponder.panHandlers}
     >
-      {React.createElement(bubbleComponent, {
+      {React.createElement(bubbleComponent || DefaultBubble, {
         label,
         radius,
         originalX,

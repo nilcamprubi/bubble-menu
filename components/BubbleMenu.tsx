@@ -18,9 +18,10 @@ interface BubbleMenuProps {
   items: BubbleProps[] // Array of bubbles to display
   menuRadius: number // Radius of the menu
   style?: BubbleMenuStyleProps // Style for the menu and its bubbles
+  bubbleComponent?: React.ComponentType<BubbleProps>;
 }
 
-const BubbleMenu = ({ items, menuRadius, style } : BubbleMenuProps) => {
+const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuProps) => {
   const { width, height } = Dimensions.get('window');
   const centerX = width / 2;
   const centerY = height / 2;
@@ -237,7 +238,7 @@ const BubbleMenu = ({ items, menuRadius, style } : BubbleMenuProps) => {
             ...style?.bubble,
             shadow: style?.shadow
           }}
-          bubbleComponent={DefaultBubble}
+          bubbleComponent={bubbleComponent}
           ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
             if (ref) {
               bubbleRefs.current[items[0].label || ""] = {
@@ -275,7 +276,7 @@ const BubbleMenu = ({ items, menuRadius, style } : BubbleMenuProps) => {
                 ...style?.bubble,
                 shadow: style?.shadow
               }}
-              bubbleComponent={DefaultBubble}
+              bubbleComponent={bubbleComponent}
               ref={(ref: { getPosition: () => Position; setPosition: (pos: Position) => void; getIsDragging: () => boolean } | null) => {
                 if (ref) {
                   bubbleRefs.current[item.label] = {
