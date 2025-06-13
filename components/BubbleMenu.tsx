@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Dimensions, ViewStyle } from 'react-native';
 import BubbleWrapper from './BubbleWrapper'
-import type { BubbleProps, BubbleWrapperProps, Position, BubbleStyleProps } from './BubbleWrapper';
+import type { BubbleProps, Position, BubbleStyleProps } from './BubbleWrapper';
 import { styles } from '../styles';
 
 // Types and Interfaces
@@ -80,7 +80,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     const bubbleBPos = bubbleB.getPosition();
     const dx = bubbleBPos.x - bubbleAPos.x;
     const dy = bubbleBPos.y - bubbleAPos.y;
-    const minDist = items[i].radius + items[j].radius + 20; // Minimum distance between bubbles
+    const minDist = items[i].radius + items[j].radius + 10; // Minimum distance between bubbles
 
     return { 
       distanceBetweenCenters: Math.hypot(dx, dy), 
@@ -118,24 +118,44 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     if (!bubbleA || !bubbleB) {
       console.warn('Cannot handle collision: bubble references are null');
       return;
+    } else {
+      console.log("Handling collision between ", items[i].label, " and ", items[j].label);
     }
 
-    const overlapDistance = minDist - distanceBetweenCenters;
-    const percentOverlap = overlapDistance / minDist;
+    const distance = Math.hypot(dx, dy);
+    if (distance === 0) return; // Prevent division by zero
 
-    // Calculate new positions
+    const overlap = minDist - distance;
+    let moveX = (dx / distance) * (overlap / 2);
+    let moveY = (dy / distance) * (overlap / 2);
+    
+    // If movement is too small, force a nudge
+    if (Math.abs(moveX) < 0.5 && Math.abs(moveY) < 0.5) {
+      const nudge = 1;
+      moveX = dx === 0 ? nudge : (dx / Math.abs(dx)) * nudge;
+      moveY = dy === 0 ? nudge : (dy / Math.abs(dy)) * nudge;
+    }
+    
     const bubbleAPos = bubbleA.getPosition();
     const bubbleBPos = bubbleB.getPosition();
 
+    console.log("Move X: ", moveX);
+    console.log("Move Y: ", moveY);
+    console.log("Bubble A Pos: ", bubbleAPos);
+    console.log("Bubble B Pos: ", bubbleBPos);
+
     // Update positions with smooth interpolation
     const updatedPosA = {
-      x: bubbleAPos.x + (bubbleAPos.x - dx * percentOverlap - bubbleAPos.x) * 0.3,
-      y: bubbleAPos.y + (bubbleAPos.y - dy * percentOverlap - bubbleAPos.y) * 0.3
+      x: bubbleAPos.x - moveX,
+      y: bubbleAPos.y - moveY
     };
     const updatedPosB = {
-      x: bubbleBPos.x + (bubbleBPos.x + dx * percentOverlap - bubbleBPos.x) * 0.3,
-      y: bubbleBPos.y + (bubbleBPos.y + dy * percentOverlap - bubbleBPos.y) * 0.3
+      x: bubbleBPos.x + moveX,
+      y: bubbleBPos.y + moveY
     };
+
+    console.log("Updated Pos A: ", updatedPosA);
+    console.log("Updated Pos B: ", updatedPosB);
 
     // Apply new positions
     bubbleA.setPosition(updatedPosA);
@@ -148,6 +168,25 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
       if (!bubbleB.getIsDragging()) newPositions[j] = bubbleB.getPosition();
       return newPositions;
     });
+  };
+
+  const isBubbleOutOfPosition = (index: number) => {
+    const initialPos = initialPositions[index];
+
+    const bubble = bubbleRefs.current[items[index].label];
+    const bubblePos = bubble?.getPosition();
+
+    if (!bubble) {
+      console.warn(`Bubble reference not found for ${items[index].label}`);
+      return false;
+    }
+
+    const roundedInitialX = Math.round(initialPos.x);
+    const roundedInitialY = Math.round(initialPos.y);
+    const roundedBubbleX = Math.round(bubblePos!.x);
+    const roundedBubbleY = Math.round(bubblePos!.y);
+
+    return roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY;
   };
 
   // Check if any bubble is out of position
@@ -164,11 +203,11 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
 
       const bubblePos = bubble.getPosition();
 
-      // Compare positions with 2 decimal precision
-      const roundedInitialX = Math.round(initialPos.x * 100) / 100;
-      const roundedInitialY = Math.round(initialPos.y * 100) / 100;
-      const roundedBubbleX = Math.round(bubblePos.x * 100) / 100;
-      const roundedBubbleY = Math.round(bubblePos.y * 100) / 100;
+      // Compare positions with no decimals
+      const roundedInitialX = Math.round(initialPos.x);
+      const roundedInitialY = Math.round(initialPos.y);
+      const roundedBubbleX = Math.round(bubblePos.x);
+      const roundedBubbleY = Math.round(bubblePos.y);
 
       return roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY;
     });    
@@ -179,7 +218,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     items.forEach(item => {
       const index = items.indexOf(item);
       const collision = checkCollision(items.indexOf(item));
-      const movableBubble = !collision.isColliding || !isBubbleDragging(collision.index!);
+      const movableBubble = !collision.isColliding && isBubbleOutOfPosition(index);
 
       if (!isBubbleDragging(items.indexOf(item)) && movableBubble) {
         const initialPos = initialPositions[index];
@@ -192,10 +231,19 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
 
         if (!bubble.getIsDragging()) {
           const bubblePos = bubble.getPosition();
-          bubble.setPosition({
-            x: bubblePos.x + (initialPos.x - bubblePos.x) * 0.1,
-            y: bubblePos.y + (initialPos.y - bubblePos.y) * 0.1
-          });
+          const deltaX = (initialPos.x - bubblePos.x) * 0.05;
+          const deltaY = (initialPos.y - bubblePos.y) * 0.05;
+        
+          if (Math.abs(initialPos.x - bubblePos.x) < 0.5 && Math.abs(initialPos.y - bubblePos.y) < 0.5) {
+            // Close enough, snap to position
+            bubble.setPosition(initialPos);
+          } else {
+            // Otherwise, interpolate
+            bubble.setPosition({
+              x: bubblePos.x + deltaX,
+              y: bubblePos.y + deltaY
+            });
+          }
         }
 
         setBubblePositions(prev => {
@@ -219,11 +267,9 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
             if (checkCollision(i, j).isColliding) {
               handleCollision(i, j);
             } 
-            if (isAnyBubbleOutOfPosition()) {
-              moveBubblesBackToInitialPositions();
-            }
           }
         }
+        moveBubblesBackToInitialPositions();
       }
     }, 1000 / 60); // 60 FPS
 

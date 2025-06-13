@@ -31,6 +31,12 @@ export const styles = StyleSheet.create({
   },
   centerBubble: {
     position: 'absolute',
+    backgroundColor: 'red',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuBubbleContainer: {
     position: 'absolute',
