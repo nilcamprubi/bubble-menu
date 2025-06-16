@@ -1,9 +1,8 @@
 import { View } from 'react-native';
-import type { BubbleProps } from './components/BubbleWrapper';
 import BubbleMenu from './components/BubbleMenu';
+import type { BubbleProps } from './components/BubbleWrapper';
 import type { BubbleMenuStyleProps } from './components/BubbleMenu';
 import { styles } from './styles';
-import DefaultBubble from './components/DefaultBubble';
 import AhaBubble from './components/AhaBubble';
 
 const radius = 50;
@@ -46,7 +45,7 @@ export default function App() {
     <View style={styles.container}>
       <BubbleMenu
         items={menuItems}
-        menuRadius={10}
+        menuDistance={150}
         style={menuStyle}
         bubbleComponent={AhaBubble}
       />

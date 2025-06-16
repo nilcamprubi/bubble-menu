@@ -13,6 +13,7 @@
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.3",
+    "react-native-bubble-menu": "file:../bubble-menu-lib",
     "react-native-bubble-select": "^0.6.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-shadow-2": "^7.1.1"

@@ -14,7 +14,7 @@ export interface BubbleMenuStyleProps {
 
 interface BubbleMenuProps {
   items: BubbleProps[] // Array of bubbles to display
-  menuRadius: number // Radius of the menu
+  menuDistance: number // Radius of the menu
   style?: BubbleMenuStyleProps // Style for the menu and its bubbles
   bubbleComponent?: React.ComponentType<BubbleProps>;
 }
@@ -29,7 +29,7 @@ type BubbleRef = {
 
  // BubbleMenu Component: Creates a circular menu with draggable bubbles that can interact with each other
  
-const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuProps) => {
+const BubbleMenu = ({ items, menuDistance, style, bubbleComponent } : BubbleMenuProps) => {
   // Window dimensions and center points
   const { width, height } = Dimensions.get('window');
   const centerX = width / 2;
@@ -42,8 +42,8 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
   // Utility Functions
   // Keep position within window bounds
   const constrainToWindow = (pos: Position, radius: number): Position => ({
-    x: Math.max(0, Math.min(width - radius * 2, pos.x)),
-    y: Math.max(radius, Math.min(height - radius * 2, pos.y))
+    x: Math.max(40, Math.min(width - radius * 2 - 40, pos.x)),
+    y: Math.max(radius + 10, Math.min(height - radius * 2 - 10, pos.y))
   });
 
   // Calculates initial positions for all bubbles in a circular formation
@@ -51,7 +51,7 @@ const BubbleMenu = ({ items, menuRadius, style, bubbleComponent } : BubbleMenuPr
     items.map((item, index) => {
       const menuRotation = 4; // Controls the rotation of the bubble formation
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / menuRotation;
-      const radius = menuRadius + 130; // Distance between bubbles, minimum distance is 130
+      const radius = menuDistance + 130; // Distance between bubbles, minimum distance is 130
       const distance = index === 0 ? 0 : radius;
       const x = centerX + Math.cos(angle) * distance - item.radius;
       const y = centerY + Math.sin(angle) * distance - item.radius;
