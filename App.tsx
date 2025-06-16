@@ -8,11 +8,11 @@ import AhaBubble from './components/AhaBubble';
 const radius = 50;
 
 const menuItems: BubbleProps[] = [ 
-  { label: "Belleza", text: "Belleza", radius: radius, icon: require('./assets/belleza-icon.png') }, 
-  { label: "Cerrajería", text: "Cerrajería", radius: radius, icon: require('./assets/cerrajeria-icon.png') },
-  { label: "Residencia", text: "Residencia", radius: radius, icon: require('./assets/residencia-icon.png') },
-  { label: "Cuidados", text: "Cuidados", radius: radius, icon: require('./assets/cuidados-icon.png') }, 
-  { label: "Masajista", text: "Masajista", radius: radius, icon: require('./assets/masajistas-icon.png') }, 
+  { label: "Belleza", text: "Belleza", icon: require('./assets/belleza-icon.png') }, 
+  { label: "Cerrajería", text: "Cerrajería", icon: require('./assets/cerrajeria-icon.png') },
+  { label: "Residencia", text: "Residencia", icon: require('./assets/residencia-icon.png') },
+  { label: "Cuidados", text: "Cuidados", icon: require('./assets/cuidados-icon.png') }, 
+  { label: "Masajista", text: "Masajista", icon: require('./assets/masajistas-icon.png') }, 
 ];
 
 const menuStyle: BubbleMenuStyleProps = {
@@ -45,7 +45,7 @@ export default function App() {
     <View style={styles.container}>
       <BubbleMenu
         items={menuItems}
-        menuDistance={150}
+        menuDistance={20}
         style={menuStyle}
         bubbleComponent={AhaBubble}
       />

@@ -2,7 +2,6 @@ import React, {
   forwardRef
 } from 'react';
 import { View, Text, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
-import { Shadow } from 'react-native-shadow-2';
 import { styles } from '../styles';
 import { BubbleStyleProps } from './BubbleWrapper';
 export interface BubbleProps {
