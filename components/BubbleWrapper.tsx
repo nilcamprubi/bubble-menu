@@ -1,13 +1,13 @@
 import React, {
+  forwardRef,
   useEffect,
-  useRef,
-  useState,
   useImperativeHandle,
-  forwardRef
+  useRef,
+  useState
 } from 'react';
-import {Animated, PanResponder, ViewStyle, TextStyle, ImageStyle, TouchableOpacity} from 'react-native';
-import { styles } from '../styles';
+import { Animated, ImageStyle, PanResponder, Pressable, TextStyle, ViewStyle } from 'react-native';
 import DefaultBubble from './DefaultBubble';
+import { styles } from '../styles';
 
 // Style interfaces for the bubble component
 export interface BubbleStyleProps {
@@ -19,27 +19,24 @@ export interface BubbleStyleProps {
 
 // Props for the bubble component
 export interface BubbleProps {
-  label: string;
-  radius: number;
+  id: string;
+  radius?: number;
   originalX?: number;
   originalY?: number;
   text?: string;
   icon?: any; // Can be a require() image or a URL
   style?: BubbleStyleProps;
-  bubbleComponent?: React.ComponentType<BubbleProps>;
+  key?: string;
+  onPress?: () => void;
 }
 
 // Props for the bubble wrapper component
 export interface BubbleWrapperProps {
-  label: string;
-  radius: number;
-  originalX?: number;
-  originalY?: number;
-  text?: string;
-  icon?: any; // Can be a require() image or a URL
-  style?: BubbleStyleProps;
+  item: BubbleProps;
   bubbleComponent?: React.ComponentType<BubbleProps>;
   setIsAnyBubbleDragging: (isDragging: boolean) => void;
+  height: number;
+  width: number;
 }
 
 // Position interface for bubble coordinates
@@ -50,20 +47,17 @@ export interface Position {
 
 // BubbleWrapper Component: Creates a draggable bubble with custom styling and behavior
 const BubbleWrapper = forwardRef(({ 
-  label, 
-  radius, 
-  originalX, 
-  originalY, 
-  text, 
-  icon, 
-  style, 
-  bubbleComponent, 
-  setIsAnyBubbleDragging 
+  item, 
+  bubbleComponent,
+  setIsAnyBubbleDragging,
+  height,
+  width
 }: BubbleWrapperProps, ref) => {
   // Animation and state management
-  const pan = useRef(new Animated.ValueXY()).current;
-  const [currentPosition, setCurrentPosition] = useState<Position>({ x: originalX!, y: originalY! });
+  const translation = useRef(new Animated.ValueXY({x: item.originalX!, y: item.originalY!})).current;
+  const [currentPosition, setCurrentPosition] = useState<Position>({ x: item.originalX!, y: item.originalY! });
   const [isDragging, setIsDragging] = useState(false);
+  const [avoidCollision, setAvoidCollision] = useState(false);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -73,13 +67,31 @@ const BubbleWrapper = forwardRef(({
         setCurrentPosition(pos);
       }
     },
-    getIsDragging: () => isDragging
+    getIsDragging: () => isDragging,
+    getAvoidCollision: () => avoidCollision,
+    setAvoidCollision: (value: boolean) => setAvoidCollision(value)
   }));
 
   // Update parent component when dragging state changes
   useEffect(() => {
-    setIsAnyBubbleDragging(isDragging);
-  }, [isDragging]);
+    translation.setValue({
+      x: currentPosition.x - item.originalX!,
+      y: currentPosition.y - item.originalY!
+    });
+  }, [currentPosition]);
+
+  // Helper to constrain position within bounds
+  const clampPosition = (x: number, y: number) => {
+    const radius = item.radius || 50;
+    const minX = 0;
+    const minY = 0;
+    const maxX = width - radius * 2;
+    const maxY = height - radius * 2;
+    return {
+      x: Math.max(minX, Math.min(maxX, x)),
+      y: Math.max(minY, Math.min(maxY, y)),
+    };
+  };
 
   // Pan responder for drag and drop functionality
   const panResponder = useRef(
@@ -90,27 +102,19 @@ const BubbleWrapper = forwardRef(({
 
       // Handle movement
       onPanResponderMove: (_, gesture) => {
-        pan.setValue({
-          x: gesture.dx,
-          y: gesture.dy,
-        });
-        setCurrentPosition({
-          x: originalX! + gesture.dx,
-          y: originalY! + gesture.dy
-        });
+        const unclampedX = item.originalX! + gesture.dx;
+        const unclampedY = item.originalY! + gesture.dy;
+        const { x, y } = clampPosition(unclampedX, unclampedY);
+        setCurrentPosition({ x, y });
         setIsDragging(true);
       },
 
       // Handle release
       onPanResponderRelease: () => {
         // Animate back to original position
-        Animated.spring(pan, {
-          toValue: {x: 0, y: 0},
-          useNativeDriver: true,
-        }).start();
         setCurrentPosition({
-          x: originalX!,
-          y: originalY!
+          x: item.originalX!,
+          y: item.originalY!
         });
         setIsDragging(false);
       },
@@ -122,29 +126,41 @@ const BubbleWrapper = forwardRef(({
     <Animated.View 
       style={[
         styles.bubbleContainer,
-        style?.container,
-        { 
+        item.style?.container,
+        {
+          left: item.originalX,
+          top: item.originalY,
           transform: [
-            { translateX: pan.x },
-            { translateY: pan.y }
+            { translateX: translation.x },
+            { translateY: translation.y }
           ]
         }
       ]}
       {...panResponder.panHandlers}
     >
-      <TouchableOpacity onPress={() => {
-        console.log("Bubble ", label, " pressed");
-      }}>
-        {React.createElement(bubbleComponent || DefaultBubble, {
-          label,
-          radius,
-          originalX,
-          originalY,
-          text,
-          icon,
-          style,
+      <Pressable
+        key={item.key}
+        style={({ pressed }) => ({
+          opacity: pressed ? 0.8 : 1,
         })}
-      </TouchableOpacity>
+        onPress={item.onPress}
+      >
+        {(() => {
+          const Component = bubbleComponent || DefaultBubble;
+          return (
+            <Component
+              id={item.id}
+              label={item.id}
+              radius={item.radius || 50}
+              originalX={item.originalX}
+              originalY={item.originalY}
+              text={item.text}
+              icon={item.icon}
+              style={item.style}
+            />
+          );
+        })()}
+      </Pressable>
     </Animated.View>
   );
 });

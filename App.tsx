@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, Dimensions } from 'react-native';
 import BubbleMenu from './components/BubbleMenu';
 import type { BubbleProps } from './components/BubbleWrapper';
 import type { BubbleMenuStyleProps } from './components/BubbleMenu';
@@ -8,11 +8,11 @@ import AhaBubble from './components/AhaBubble';
 const radius = 50;
 
 const menuItems: BubbleProps[] = [ 
-  { label: "Belleza", text: "Belleza", radius: radius, icon: require('./assets/belleza-icon.png') }, 
-  { label: "Cerrajería", text: "Cerrajería", radius: radius, icon: require('./assets/cerrajeria-icon.png') },
-  { label: "Residencia", text: "Residencia", radius: radius, icon: require('./assets/residencia-icon.png') },
-  { label: "Cuidados", text: "Cuidados", radius: radius, icon: require('./assets/cuidados-icon.png') }, 
-  { label: "Masajista", text: "Masajista", radius: radius, icon: require('./assets/masajistas-icon.png') }, 
+  { id: "Belleza", text: "Belleza", radius: radius, icon: require('./assets/belleza-icon.png') }, 
+  { id: "Cerrajería", text: "Cerrajería", radius: radius, icon: require('./assets/cerrajeria-icon.png') },
+  { id: "Residencia", text: "Residencia", radius: radius, icon: require('./assets/residencia-icon.png') },
+  { id: "Cuidados", text: "Cuidados", radius: radius, icon: require('./assets/cuidados-icon.png') }, 
+  { id: "Masajista", text: "Masajista", radius: radius, icon: require('./assets/masajistas-icon.png') }, 
 ];
 
 const menuStyle: BubbleMenuStyleProps = {
@@ -45,7 +45,9 @@ export default function App() {
     <View style={styles.container}>
       <BubbleMenu
         items={menuItems}
-        menuDistance={150}
+        menuDistance={70}
+        height={Dimensions.get('window').height}
+        width={Dimensions.get('window').width}
         style={menuStyle}
         bubbleComponent={AhaBubble}
       />

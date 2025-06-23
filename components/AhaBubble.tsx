@@ -4,18 +4,10 @@ import React, {
 import { View, Text, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { Shadow } from 'react-native-shadow-2';
 import { styles } from '../styles';
+import type { BubbleProps } from './BubbleWrapper';
 import { BubbleStyleProps } from './BubbleWrapper';
-export interface BubbleProps {
-  label: string;
-  radius: number;
-  originalX?: number;
-  originalY?: number;
-  text?: string;
-  icon?: any; // Can be a require() image or a URL
-  style?: BubbleStyleProps;
-}
 
-const Bubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, ref) => {
+const AhaBubble = forwardRef(({ id, radius = 50, text, icon, style }: BubbleProps, ref) => {
 
   return (
           <View 
@@ -59,7 +51,7 @@ const Bubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, re
               <Text style={[
                 styles.text,
                 style?.text,
-                { fontSize: icon ? radius/3.6 : 16, color: '#CBD22C' } // font size adapts to the radius of the bubble and the icon
+                { fontSize: icon ? radius/3.6 : 16, color: '#CBD22C' }
               ]}>{text}</Text>
             )}
             </View>
@@ -67,4 +59,4 @@ const Bubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, re
       ) 
 });
 
-export default Bubble; 
+export default AhaBubble; 
