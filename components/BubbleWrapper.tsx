@@ -8,6 +8,7 @@ import React, {
 import { Animated, ImageStyle, PanResponder, Pressable, TextStyle, ViewStyle } from 'react-native';
 import DefaultBubble from './DefaultBubble';
 import { styles } from '../styles';
+import { K } from '../constants';
 
 // Style interfaces for the bubble component
 export interface BubbleStyleProps {
@@ -74,10 +75,18 @@ const BubbleWrapper = forwardRef(({
 
   // Update parent component when dragging state changes
   useEffect(() => {
+    if (!isDragging) {
+      Animated.timing(translation, {
+        toValue: { x: currentPosition.x - item.originalX!, y: currentPosition.y - item.originalY! },
+        useNativeDriver: true,
+        duration: 1000 / K.FPS_UI,
+      }).start();
+    } else {
     translation.setValue({
-      x: currentPosition.x - item.originalX!,
-      y: currentPosition.y - item.originalY!
-    });
+        x: currentPosition.x - item.originalX!,
+        y: currentPosition.y - item.originalY!
+      });
+    }
   }, [currentPosition]);
 
   // Helper to constrain position within bounds
@@ -112,11 +121,11 @@ const BubbleWrapper = forwardRef(({
       // Handle release
       onPanResponderRelease: () => {
         // Animate back to original position
+        setIsDragging(false);
         setCurrentPosition({
           x: item.originalX!,
           y: item.originalY!
         });
-        setIsDragging(false);
       },
     }),
   ).current;

@@ -3,6 +3,7 @@ import { View, ViewStyle } from 'react-native';
 import type { BubbleProps, BubbleStyleProps, Position } from './BubbleWrapper';
 import BubbleWrapper from './BubbleWrapper';
 import { styles } from '../styles';
+import { K } from '../constants';
 
 // Types and Interfaces
 export interface BubbleMenuStyleProps {
@@ -266,8 +267,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
         if (!bubble.getIsDragging()) {
           const bubblePos = bubble.getPosition();
-          const deltaX = (initialPos.x - bubblePos.x) * 0.05;
-          const deltaY = (initialPos.y - bubblePos.y) * 0.05;
+          const deltaX = (initialPos.x - bubblePos.x) * 0.5;
+          const deltaY = (initialPos.y - bubblePos.y) * 0.5;
           const nextPos = {
             x: Math.abs(initialPos.x - bubblePos.x) < 0.5 ? initialPos.x : bubblePos.x + deltaX,
             y: Math.abs(initialPos.y - bubblePos.y) < 0.5 ? initialPos.y : bubblePos.y + deltaY
@@ -292,7 +293,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   // Collision Detection Effect
   useEffect(() => {
-    const interval = setInterval(() => { 
+    const interval_Logic = setInterval(() => { 
       if (isAnyBubbleDragging || isAnyBubbleOutOfPosition()) { 
         // Check for collisions between all bubble pairs
         for (let i = 0; i < items.length; i++) {
@@ -304,9 +305,16 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
         }
         moveBubblesBackToInitialPositions();
       }
-    }, 1000 / 60); // 60 FPS
+    }, 1000 / K.FPS_LOGIC);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(interval_Logic);
+
+    // const interval_UI = setInterval(() => { 
+    //   if (isAnyBubbleDragging || isAnyBubbleOutOfPosition()) { 
+    //   }
+    // }, 1000 / K.FPS_UI);
+
+    // return () => clearInterval(interval_UI);
   }, []);
 
   // Render
