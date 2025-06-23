@@ -77,7 +77,14 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   }, [items, centerX, centerY, menuDistance, width, height]);
 
   const [bubblePositions, setBubblePositions] = useState<Record<string, Position>>(initialPositions); // State for the positions of the bubbles
-  console.log("bubblePositions", bubblePositions);
+  
+  const updateBubblePosition = (id: string, newPosition: Position) => {
+    setBubblePositions(prev => {
+      const newPositions = { ...prev };
+      newPositions[id] = newPosition;
+      return newPositions;
+    });
+  }
 
   // Bubble State Management
   // Checks if a specific bubble is being dragged
@@ -94,8 +101,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       throw new Error(`Bubble references not found for ids ${idA} and ${idB}`);
     }
 
-    const bubbleAPos = bubbleA.getPosition();
-    const bubbleBPos = bubbleB.getPosition();
+    const bubbleAPos = bubblePositions[idA];
+    const bubbleBPos = bubblePositions[idB];
     const dx = bubbleBPos.x - bubbleAPos.x;
     const dy = bubbleBPos.y - bubbleAPos.y;
     const minDist = bubbleRadius + bubbleRadius + 10; // Minimum distance between bubbles
@@ -130,6 +137,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   // Handle collision between two bubbles
   const handleCollision = (idA: string, idB: string) => {
+    console.log("Handling collision between ", idA, " and ", idB); 
+
     // Distance data fetching
     const { minDist, bubbleA, bubbleB, dx, dy } = getDistanceData(idA, idB);
 
@@ -154,13 +163,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       moveY = dy === 0 ? nudge : (dy / Math.abs(dy)) * nudge;
     }
     
-    const bubbleAPos = bubbleA.getPosition();
-    const bubbleBPos = bubbleB.getPosition();
-
-    console.log("Move X: ", moveX);
-    console.log("Move Y: ", moveY);
-    console.log("Bubble A Pos: ", bubbleAPos);
-    console.log("Bubble B Pos: ", bubbleBPos);
+    const bubbleAPos = bubblePositions[idA];
+    const bubbleBPos = bubblePositions[idB];
 
     // Update positions with smooth interpolation
     const radiusA = bubbleRadius;
@@ -173,21 +177,16 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       x: bubbleBPos.x + moveX,
       y: bubbleBPos.y + moveY
     };
+
     const updatedPosA = clampPosition(unclampedPosA, radiusA);
     const updatedPosB = clampPosition(unclampedPosB, radiusB);
 
-    console.log("Updated Pos A: ", updatedPosA);
-    console.log("Updated Pos B: ", updatedPosB);
-
-    // Apply new positions
-    bubbleA.setPosition(updatedPosA);
-    bubbleB.setPosition(updatedPosB);
 
     // Update state
     setBubblePositions(prev => {
       const newPositions = { ...prev };
-      if (!bubbleA.getIsDragging()) newPositions[idA] = bubbleA.getPosition();
-      if (!bubbleB.getIsDragging()) newPositions[idB] = bubbleB.getPosition();
+      if (!bubbleA.getIsDragging()) newPositions[idA] = updatedPosA;
+      if (!bubbleB.getIsDragging()) newPositions[idB] = updatedPosB;
       return newPositions;
     });
   };
@@ -195,7 +194,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const isBubbleOutOfPosition = (id: string) => {
     const initialPos = initialPositions[id];
     const bubble = bubbleRefs.current[id];
-    const bubblePos = bubble?.getPosition();
+    const bubblePos = bubblePositions[id];
 
     if (!bubble) {
       console.warn(`Bubble reference not found for ${id}`);
@@ -237,9 +236,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const willCollideAtPosition = (id: string, targetPos: Position) => {
     for (const other of items) {
       if (other.id === id) continue;
-      const otherBubble = bubbleRefs.current[other.id];
-      if (!otherBubble) continue;
-      const otherPos = otherBubble.getPosition();
+      const otherPos = bubblePositions[other.id];
       const dx = otherPos.x - targetPos.x;
       const dy = otherPos.y - targetPos.y;
       const minDist = (bubbleRadius ?? 50) * 2 + 10;
@@ -266,7 +263,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
         }
 
         if (!bubble.getIsDragging()) {
-          const bubblePos = bubble.getPosition();
+          const bubblePos = bubblePositions[item.id];
           const deltaX = (initialPos.x - bubblePos.x) * 0.5;
           const deltaY = (initialPos.y - bubblePos.y) * 0.5;
           const nextPos = {
@@ -276,25 +273,38 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
           // Only move if it won't cause a collision
           if (!willCollideAtPosition(item.id, nextPos)) {
-            bubble.setPosition(nextPos);
+            setBubblePositions(prev => {
+              const newPositions = { ...prev };
+              if (!bubble.getIsDragging()) {
+                newPositions[item.id] = nextPos;
+              }
+              return newPositions;
+            });
           }
         }
-
-        setBubblePositions(prev => {
-          const newPositions = { ...prev };
-          if (!bubble.getIsDragging()) {
-            newPositions[item.id] = bubble.getPosition();
-          }
-          return newPositions;
-        });
       }
     });
+  };
+
+  const updateUI = () => {
+    for (const item of items) {
+      const bubble = bubbleRefs.current[item.id];
+      const logicPos = bubblePositions[item.id];
+      const UIPos = bubble?.getPosition()!;
+
+      if (logicPos.x !== UIPos.x || logicPos.y !== UIPos.y) {
+        const smoothTransition = { x: logicPos.x - UIPos.x * (1/(K.FPS_UI/K.FPS_LOGIC)), y: logicPos.y - UIPos.y * (1/(K.FPS_UI/K.FPS_LOGIC)) };
+        const newPos = { x: UIPos.x + smoothTransition.x, y: UIPos.y + smoothTransition.y };
+        bubble?.setPosition(newPos);
+      }
+    }
   };
 
   // Collision Detection Effect
   useEffect(() => {
     const interval_Logic = setInterval(() => { 
       if (isAnyBubbleDragging || isAnyBubbleOutOfPosition()) { 
+        console.log("Checking Collisions")
         // Check for collisions between all bubble pairs
         for (let i = 0; i < items.length; i++) {
           for (let j = i + 1; j < items.length; j++) {
@@ -307,14 +317,17 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       }
     }, 1000 / K.FPS_LOGIC);
 
-    return () => clearInterval(interval_Logic);
 
-    // const interval_UI = setInterval(() => { 
-    //   if (isAnyBubbleDragging || isAnyBubbleOutOfPosition()) { 
-    //   }
-    // }, 1000 / K.FPS_UI);
+    const interval_UI = setInterval(() => { 
+      for (let i = 1; i < (K.FPS_UI/K.FPS_LOGIC + 1); i++) {
+        updateUI();
+      }
+    }, 1000 / K.FPS_UI);
 
-    // return () => clearInterval(interval_UI);
+    return () => {
+      clearInterval(interval_Logic);
+      clearInterval(interval_UI);
+    };
   }, []);
 
   // Render
@@ -332,6 +345,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
           }}
           bubbleComponent={bubbleComponent}
           setIsAnyBubbleDragging={setIsAnyBubbleDragging}
+          updateBubblePositions={updateBubblePosition}
           height={height}
           width={width}
           ref={(ref: BubbleRef) => {
@@ -361,6 +375,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
               }}
               bubbleComponent={bubbleComponent}
               setIsAnyBubbleDragging={setIsAnyBubbleDragging}
+              updateBubblePositions={updateBubblePosition}
               height={height}
               width={width}
               ref={(ref: BubbleRef) => {

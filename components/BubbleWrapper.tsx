@@ -36,6 +36,7 @@ export interface BubbleWrapperProps {
   item: BubbleProps;
   bubbleComponent?: React.ComponentType<BubbleProps>;
   setIsAnyBubbleDragging: (isDragging: boolean) => void;
+  updateBubblePositions: (id: string, newPosition: Position) => void;
   height: number;
   width: number;
 }
@@ -51,6 +52,7 @@ const BubbleWrapper = forwardRef(({
   item, 
   bubbleComponent,
   setIsAnyBubbleDragging,
+  updateBubblePositions,
   height,
   width
 }: BubbleWrapperProps, ref) => {
@@ -115,6 +117,7 @@ const BubbleWrapper = forwardRef(({
         const unclampedY = item.originalY! + gesture.dy;
         const { x, y } = clampPosition(unclampedX, unclampedY);
         setCurrentPosition({ x, y });
+        updateBubblePositions(item.id, { x, y }) // To be changed so that it is 20 fps (LOGIC)
         setIsDragging(true);
       },
 
@@ -126,6 +129,7 @@ const BubbleWrapper = forwardRef(({
           x: item.originalX!,
           y: item.originalY!
         });
+        updateBubblePositions(item.id, {x: item.originalX!, y: item.originalY!})
       },
     }),
   ).current;
