@@ -86,6 +86,10 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
     });
   }
 
+  useEffect(() => { 
+    console.log("BubblePositions updated ", bubblePositions["Masajista"])
+  }, [bubblePositions])
+
   // Bubble State Management
   // Checks if a specific bubble is being dragged
   const isBubbleDragging = (id: string) => 
@@ -93,26 +97,22 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   // Get distance data between two bubbles
   const getDistanceData = (idA: string, idB: string) => {
-    const bubbles = bubbleRefs.current;
-    const bubbleA = bubbles[idA];
-    const bubbleB = bubbles[idB];
-
-    if (!bubbleA || !bubbleB) {
-      throw new Error(`Bubble references not found for ids ${idA} and ${idB}`);
-    }
-
     const bubbleAPos = bubblePositions[idA];
     const bubbleBPos = bubblePositions[idB];
     const dx = bubbleBPos.x - bubbleAPos.x;
     const dy = bubbleBPos.y - bubbleAPos.y;
     const minDist = bubbleRadius + bubbleRadius + 10; // Minimum distance between bubbles
 
+    if ((idA == "Masajista" && idB == "Belleza") || (idB == "Masajista" && idA == "Belleza")) {
+      console.log("Distance Between Centers: ", Math.hypot(dx, dy));
+      console.log("Min Dist: ", minDist);
+    }
+
+
     return { 
       distanceBetweenCenters: Math.hypot(dx, dy), 
       dx, 
       dy, 
-      bubbleA, 
-      bubbleB, 
       minDist 
     };
   };
@@ -140,14 +140,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
     console.log("Handling collision between ", idA, " and ", idB); 
 
     // Distance data fetching
-    const { minDist, bubbleA, bubbleB, dx, dy } = getDistanceData(idA, idB);
-
-    if (!bubbleA || !bubbleB) {
-      console.warn('Cannot handle collision: bubble references are null');
-      return;
-    } else {
-      console.log("Handling collision between ", idA, " and ", idB);
-    }
+    const { minDist, dx, dy } = getDistanceData(idA, idB);
 
     const distance = Math.hypot(dx, dy);
     if (distance === 0) return; // Prevent division by zero
@@ -185,8 +178,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
     // Update state
     setBubblePositions(prev => {
       const newPositions = { ...prev };
-      if (!bubbleA.getIsDragging()) newPositions[idA] = updatedPosA;
-      if (!bubbleB.getIsDragging()) newPositions[idB] = updatedPosB;
+      if (!bubbleRefs.current[idA]?.getIsDragging()) newPositions[idA] = updatedPosA;
+      if (!bubbleRefs.current[idB]?.getIsDragging()) newPositions[idB] = updatedPosB;
       return newPositions;
     });
   };
@@ -309,6 +302,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
         for (let i = 0; i < items.length; i++) {
           for (let j = i + 1; j < items.length; j++) {
             if (checkCollision(items[i].id, items[j].id).isColliding) {
+              console.log("Handling Collision between ", items[i].id, " and ", items[j].id)
               handleCollision(items[i].id, items[j].id);
             } 
           }
@@ -328,7 +322,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       clearInterval(interval_Logic);
       clearInterval(interval_UI);
     };
-  }, []);
+  }, [initialPositions, items]);
 
   // Render
   return (
