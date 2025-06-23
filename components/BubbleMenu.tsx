@@ -77,6 +77,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   }, [items, centerX, centerY, menuDistance, width, height]);
 
   const [bubblePositions, setBubblePositions] = useState<Record<string, Position>>(initialPositions); // State for the positions of the bubbles
+  const bubblePositionsRef = useRef<Record<string, Position>>(bubblePositions);
+
   
   const updateBubblePosition = (id: string, newPosition: Position) => {
     setBubblePositions(prev => {
@@ -86,9 +88,10 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
     });
   }
 
-  useEffect(() => { 
-    console.log("BubblePositions updated ", bubblePositions["Masajista"])
-  }, [bubblePositions])
+
+  useEffect(() => {
+    bubblePositionsRef.current = bubblePositions;
+  }, [bubblePositions]);
 
   // Bubble State Management
   // Checks if a specific bubble is being dragged
@@ -97,8 +100,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   // Get distance data between two bubbles
   const getDistanceData = (idA: string, idB: string) => {
-    const bubbleAPos = bubblePositions[idA];
-    const bubbleBPos = bubblePositions[idB];
+    const bubbleAPos = bubblePositionsRef.current[idA];
+    const bubbleBPos = bubblePositionsRef.current[idB];
     const dx = bubbleBPos.x - bubbleAPos.x;
     const dy = bubbleBPos.y - bubbleAPos.y;
     const minDist = bubbleRadius + bubbleRadius + 10; // Minimum distance between bubbles
@@ -156,8 +159,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       moveY = dy === 0 ? nudge : (dy / Math.abs(dy)) * nudge;
     }
     
-    const bubbleAPos = bubblePositions[idA];
-    const bubbleBPos = bubblePositions[idB];
+    const bubbleAPos = bubblePositionsRef.current[idA];
+    const bubbleBPos = bubblePositionsRef.current[idB];
 
     // Update positions with smooth interpolation
     const radiusA = bubbleRadius;
@@ -187,7 +190,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const isBubbleOutOfPosition = (id: string) => {
     const initialPos = initialPositions[id];
     const bubble = bubbleRefs.current[id];
-    const bubblePos = bubblePositions[id];
+    const bubblePos = bubblePositionsRef.current[id];
 
     if (!bubble) {
       console.warn(`Bubble reference not found for ${id}`);
@@ -229,7 +232,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const willCollideAtPosition = (id: string, targetPos: Position) => {
     for (const other of items) {
       if (other.id === id) continue;
-      const otherPos = bubblePositions[other.id];
+      const otherPos = bubblePositionsRef.current[other.id];
       const dx = otherPos.x - targetPos.x;
       const dy = otherPos.y - targetPos.y;
       const minDist = (bubbleRadius ?? 50) * 2 + 10;
@@ -256,7 +259,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
         }
 
         if (!bubble.getIsDragging()) {
-          const bubblePos = bubblePositions[item.id];
+          const bubblePos = bubblePositionsRef.current[item.id];
           const deltaX = (initialPos.x - bubblePos.x) * 0.5;
           const deltaY = (initialPos.y - bubblePos.y) * 0.5;
           const nextPos = {
@@ -282,7 +285,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const updateUI = () => {
     for (const item of items) {
       const bubble = bubbleRefs.current[item.id];
-      const logicPos = bubblePositions[item.id];
+      const logicPos = bubblePositionsRef.current[item.id];
       const UIPos = bubble?.getPosition()!;
 
       if (logicPos.x !== UIPos.x || logicPos.y !== UIPos.y) {
