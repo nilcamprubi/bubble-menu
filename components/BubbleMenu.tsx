@@ -314,6 +314,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
     <View style={[styles.container, style?.container]}>
       {/* Center Bubble */}
         <BubbleWrapper 
+          key={items[0].id}
           item={{
             ...items[0],
             radius: bubbleRadius,
@@ -342,6 +343,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       {items.slice(1).map((item) => {
         return (
             <BubbleWrapper 
+              key={item.id}
               item={{
                 ...item,
                 radius: bubbleRadius,
