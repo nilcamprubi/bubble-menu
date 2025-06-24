@@ -78,6 +78,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   const [bubblePositions, setBubblePositions] = useState<Record<string, Position>>(initialPositions); // State for the positions of the bubbles
   const bubblePositionsRef = useRef<Record<string, Position>>(bubblePositions);
+  const positionDifferencesRef = useRef<Record<string, Position>>({});
+  const UISyncRef = useRef<number>(1);
 
   
   const updateBubblePosition = (id: string, newPosition: Position) => {
@@ -271,18 +273,33 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const updateUI = () => {
     for (const item of items) {
       const bubble = bubbleRefs.current[item.id];
-      const logicPos = bubblePositionsRef.current[item.id];
       const UIPos = bubble?.getPosition()!;
+      const logicPos = bubblePositionsRef.current[item.id];
+      
+      // Calculate initial difference when logic updates (every 3 UI frames)
+      if (UISyncRef.current === 1) {
+        positionDifferencesRef.current[item.id] = {
+          x: logicPos.x - UIPos.x,
+          y: logicPos.y - UIPos.y
+        };
+      }
+      
+      const positionDifference = positionDifferencesRef.current[item.id];
+      if (positionDifference && (positionDifference.x !== 0 || positionDifference.y !== 0)) {
+        // Move by 1/3 of the total difference each frame
+        const stepSize = 1 / K.FPS_SYNC; // 1/3 if UI=60, Logic=20
+        const step = {
+          x: positionDifference.x * stepSize,
+          y: positionDifference.y * stepSize
+        };
+        
+        const newPos = {
+          x: UIPos.x + step.x,
+          y: UIPos.y + step.y
+        };
+        
 
-      if (logicPos.x !== UIPos.x || logicPos.y !== UIPos.y) {
-        const smoothTransition = { x: (logicPos.x - UIPos.x) * (1/(K.FPS_UI/K.FPS_LOGIC)), y: (logicPos.y - UIPos.y) * (1/(K.FPS_UI/K.FPS_LOGIC)) };
-        const newPos = { x: UIPos.x + smoothTransition.x, y: UIPos.y + smoothTransition.y };
-        if (item.id === "Belleza") {
-          console.log("LogicPos: ", logicPos);
-          console.log("UIPos: ", UIPos);
-          console.log("New Pos: ", newPos); 
-        }       
-        bubble?.setPosition(logicPos);
+        bubble?.setPosition(newPos);
       }
     }
   };
@@ -290,7 +307,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   // Collision Detection Effect
   useEffect(() => {
     const interval_Logic = setInterval(() => { 
-      if (isAnyBubbleDragging || isAnyBubbleOutOfPosition()) { 
+      if (isAnyBubbleOutOfPosition()) { 
         console.log("Checking Collisions")
         // Check for collisions between all bubble pairs
         for (let i = 0; i < items.length; i++) {
@@ -307,9 +324,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
 
     const interval_UI = setInterval(() => { 
-      for (let i = 1; i < (K.FPS_UI/K.FPS_LOGIC + 1); i++) {
-        updateUI();
-      }
+      updateUI();
+      UISyncRef.current = (UISyncRef.current % 3) + 1;
     }, 1000 / K.FPS_UI);
 
     return () => {

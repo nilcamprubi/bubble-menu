@@ -61,6 +61,8 @@ const BubbleWrapper = forwardRef(({
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: item.originalX!, y: item.originalY! });
   const [isDragging, setIsDragging] = useState(false);
   const [avoidCollision, setAvoidCollision] = useState(false);
+  const lastLogicUpdateRef = useRef(0);
+  const LOGIC_FRAME_INTERVAL = 1000 / K.FPS_LOGIC;
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -81,7 +83,7 @@ const BubbleWrapper = forwardRef(({
       Animated.timing(translation, {
         toValue: { x: currentPosition.x - item.originalX!, y: currentPosition.y - item.originalY! },
         useNativeDriver: true,
-        duration: 1000 / K.FPS_UI,
+        duration: 1000 / (K.FPS_UI * K.FPS_SYNC),
       }).start();
     } else {
     translation.setValue({
@@ -111,25 +113,35 @@ const BubbleWrapper = forwardRef(({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
 
+      onPanResponderGrant: () => {
+        setIsDragging(true);
+      },
+
       // Handle movement
       onPanResponderMove: (_, gesture) => {
         const unclampedX = item.originalX! + gesture.dx;
         const unclampedY = item.originalY! + gesture.dy;
         const { x, y } = clampPosition(unclampedX, unclampedY);
         setCurrentPosition({ x, y });
-        updateBubblePositions(item.id, { x, y }) // To be changed so that it is 20 fps (LOGIC)
-        setIsDragging(true);
+        
+        // Throttle logic updates to FPS_Logic
+        const now = Date.now();
+        if (now - lastLogicUpdateRef.current >= LOGIC_FRAME_INTERVAL) {
+          updateBubblePositions(item.id, { x, y });
+          lastLogicUpdateRef.current = now;
+        }
       },
 
       // Handle release
       onPanResponderRelease: () => {
         // Animate back to original position
         setIsDragging(false);
-        setCurrentPosition({
-          x: item.originalX!,
-          y: item.originalY!
-        });
+        Animated.spring(translation, {
+          toValue: {x: 0, y: 0},
+          useNativeDriver: true,
+        }).start();
         updateBubblePositions(item.id, {x: item.originalX!, y: item.originalY!})
+        lastLogicUpdateRef.current = 0; // Reset throttle
       },
     }),
   ).current;
