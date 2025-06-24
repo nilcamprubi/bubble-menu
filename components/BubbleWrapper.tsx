@@ -137,10 +137,14 @@ const BubbleWrapper = forwardRef(({
         // Animate back to original position
         setIsDragging(false);
         Animated.spring(translation, {
-          toValue: {x: 0, y: 0},
+          toValue: { x: 0, y: 0 },
           useNativeDriver: true,
-        }).start();
-        updateBubblePositions(item.id, {x: item.originalX!, y: item.originalY!})
+          speed: 0.5, 
+          bounciness: 2,
+        }).start(() => {
+          setCurrentPosition({ x: item.originalX!, y: item.originalY! });
+          updateBubblePositions(item.id, {x: item.originalX!, y: item.originalY!})
+        });
         lastLogicUpdateRef.current = 0; // Reset throttle
       },
     }),

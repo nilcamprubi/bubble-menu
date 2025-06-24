@@ -117,22 +117,24 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   };
 
   // Collision Detection: Checks for collisions between bubbles
-  function checkCollision(idA: string, idB?: string): { isColliding: boolean, id: string | undefined } {
-    if (idB !== undefined) {
-      const { distanceBetweenCenters, minDist } = getDistanceData(idA, idB);
-      return { isColliding: distanceBetweenCenters < minDist, id: idB };
-    }
-
-    // Check collision with all other bubbles
-    for (const other of items) {
-      if (other.id === idA) continue;
-      const { distanceBetweenCenters, minDist } = getDistanceData(idA, other.id);
-      if (distanceBetweenCenters < minDist) {
-        return { isColliding: true, id: other.id };
-      }
-    }
-    return { isColliding: false, id: undefined };
+  function checkCollision(idA: string, idB: string): { isColliding: boolean, id: string } {
+    console.log("Checking collision between: ", idA, " and ", idB)
+    const { distanceBetweenCenters, minDist } = getDistanceData(idA, idB);
+    return { isColliding: distanceBetweenCenters < minDist, id: idB };
   }
+
+    // Collision Detection: Checks for collisions between bubbles
+    function checkIndividualCollision(idA: string) {
+      // Check collision with all other bubbles
+      for (const other of items) {
+        if (other.id === idA) continue;
+        const { distanceBetweenCenters, minDist } = getDistanceData(idA, other.id);
+        if (distanceBetweenCenters < minDist) {
+          return true;
+        }
+      }
+      return false;
+    }
 
   // Handle collision between two bubbles
   const handleCollision = (idA: string, idB: string) => {
@@ -203,7 +205,9 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   // Check if any bubble is out of position
   const isAnyBubbleOutOfPosition = () => {
-    return items.some(item => {
+    let anyBubbleOut = false;
+    const bubblesOutOfPosition: string[] = [];
+    items.some(item => {
       const initialPos = initialPositions[item.id];
 
       // Compare positions with no decimals
@@ -212,8 +216,13 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       const roundedBubbleX = Math.round(bubblePositionsRef.current[item.id].x);
       const roundedBubbleY = Math.round(bubblePositionsRef.current[item.id].y);
 
-      return roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY;
+      if (roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY) {
+        anyBubbleOut = true;
+        bubblesOutOfPosition.push(item.id);
+      }
     });    
+
+    return {result: anyBubbleOut, array: bubblesOutOfPosition}
   }
 
   // Helper: Check if moving a bubble to a position would cause a collision
@@ -234,8 +243,8 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   // Move bubbles back to their initial positions
   const moveBubblesBackToInitialPositions = () => {
     items.forEach(item => {
-      const collision = checkCollision(item.id);
-      const movableBubble = !collision.isColliding && isBubbleOutOfPosition(item.id);
+      const collision = checkIndividualCollision(item.id);
+      const movableBubble = !collision && isBubbleOutOfPosition(item.id);
 
       if (!isBubbleDragging(item.id) && movableBubble) {
         const initialPos = initialPositions[item.id];
@@ -306,15 +315,26 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
   // Collision Detection Effect
   useEffect(() => {
-    const interval_Logic = setInterval(() => { 
-      if (isAnyBubbleOutOfPosition()) { 
-        console.log("Checking Collisions")
+    const interval_Logic = setInterval(() => {
+      const { result, array } = isAnyBubbleOutOfPosition(); 
+      if (result === true) { 
         // Check for collisions between all bubble pairs
-        for (let i = 0; i < items.length; i++) {
-          for (let j = i + 1; j < items.length; j++) {
-            if (checkCollision(items[i].id, items[j].id).isColliding) {
+        for (let i = 0; i < array.length; i++) {
+          console.log("array: ", array)
+          // Create a set of previously checked array items (from 0 to i-1)
+          const previouslyChecked = new Set(array.slice(0, i));
+
+          for (let j = 0; j < items.length; j++) {
+
+            // Skip if it is the same bubble
+            if (array[i] === items[j].id) continue;
+
+            // Skip if items[j].id was checked before in array[0..i-1]
+            if (previouslyChecked.has(items[j].id)) continue;
+
+            if (checkCollision(array[i], items[j].id).isColliding) {
               console.log("Handling Collision between ", items[i].id, " and ", items[j].id)
-              handleCollision(items[i].id, items[j].id);
+              handleCollision(array[i], items[j].id);
             } 
           }
         }
@@ -324,7 +344,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
 
     const interval_UI = setInterval(() => { 
-      if (isAnyBubbleOutOfPosition()) {
+      if (isAnyBubbleOutOfPosition().result) {
         updateUI();
         UISyncRef.current = (UISyncRef.current % 3) + 1;
       }
