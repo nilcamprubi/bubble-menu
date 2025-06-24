@@ -106,12 +106,6 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
     const dy = bubbleBPos.y - bubbleAPos.y;
     const minDist = bubbleRadius + bubbleRadius + 10; // Minimum distance between bubbles
 
-    if ((idA == "Masajista" && idB == "Belleza") || (idB == "Masajista" && idA == "Belleza")) {
-      console.log("Distance Between Centers: ", Math.hypot(dx, dy));
-      console.log("Min Dist: ", minDist);
-    }
-
-
     return { 
       distanceBetweenCenters: Math.hypot(dx, dy), 
       dx, 
@@ -209,20 +203,12 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
   const isAnyBubbleOutOfPosition = () => {
     return items.some(item => {
       const initialPos = initialPositions[item.id];
-      const bubble = bubbleRefs.current[item.id];
-
-      if (!bubble) {
-        console.warn(`Bubble reference not found for ${item.id}`);
-        return false;
-      }
-
-      const bubblePos = bubble.getPosition();
 
       // Compare positions with no decimals
       const roundedInitialX = Math.round(initialPos.x);
       const roundedInitialY = Math.round(initialPos.y);
-      const roundedBubbleX = Math.round(bubblePos.x);
-      const roundedBubbleY = Math.round(bubblePos.y);
+      const roundedBubbleX = Math.round(bubblePositionsRef.current[item.id].x);
+      const roundedBubbleY = Math.round(bubblePositionsRef.current[item.id].y);
 
       return roundedInitialX !== roundedBubbleX || roundedInitialY !== roundedBubbleY;
     });    
@@ -289,9 +275,14 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
       const UIPos = bubble?.getPosition()!;
 
       if (logicPos.x !== UIPos.x || logicPos.y !== UIPos.y) {
-        const smoothTransition = { x: logicPos.x - UIPos.x * (1/(K.FPS_UI/K.FPS_LOGIC)), y: logicPos.y - UIPos.y * (1/(K.FPS_UI/K.FPS_LOGIC)) };
+        const smoothTransition = { x: (logicPos.x - UIPos.x) * (1/(K.FPS_UI/K.FPS_LOGIC)), y: (logicPos.y - UIPos.y) * (1/(K.FPS_UI/K.FPS_LOGIC)) };
         const newPos = { x: UIPos.x + smoothTransition.x, y: UIPos.y + smoothTransition.y };
-        bubble?.setPosition(newPos);
+        if (item.id === "Belleza") {
+          console.log("LogicPos: ", logicPos);
+          console.log("UIPos: ", UIPos);
+          console.log("New Pos: ", newPos); 
+        }       
+        bubble?.setPosition(logicPos);
       }
     }
   };
