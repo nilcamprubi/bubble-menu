@@ -324,8 +324,10 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius, style, b
 
 
     const interval_UI = setInterval(() => { 
-      updateUI();
-      UISyncRef.current = (UISyncRef.current % 3) + 1;
+      if (isAnyBubbleOutOfPosition()) {
+        updateUI();
+        UISyncRef.current = (UISyncRef.current % 3) + 1;
+      }
     }, 1000 / K.FPS_UI);
 
     return () => {
