@@ -180,7 +180,7 @@ const BubbleWrapper = forwardRef<any, BubbleWrapperProps>(({
         style={({ pressed }) => ({
           opacity: pressed ? 0.8 : 1,
         })}
-        onPress={onPress}
+        onPressIn={onPress}
       >
         <BubbleComponent
             {...item}
