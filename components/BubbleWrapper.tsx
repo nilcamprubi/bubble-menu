@@ -56,6 +56,8 @@ const BubbleWrapper = forwardRef(({
   height,
   width
 }: BubbleWrapperProps, ref) => {
+  console.log("BubbleWrapper Rendered: ", item.id)
+
   // Animation and state management
   const translation = useRef(new Animated.ValueXY({x: item.originalX!, y: item.originalY!})).current;
   const [currentPosition, setCurrentPosition] = useState<Position>({ x: item.originalX!, y: item.originalY! });
