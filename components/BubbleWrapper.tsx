@@ -40,7 +40,6 @@ export interface BubbleProps {
 export interface BubbleWrapperProps {
   item: BubbleProps;
   bubbleComponent?: React.ComponentType<BubbleProps>;
-  setIsAnyBubbleDragging: (isDragging: boolean) => void;
   updateBubblePositions: (id: string, newPosition: Position) => void;
   height: number;
   width: number;
@@ -55,7 +54,6 @@ export interface Position {
 const BubbleWrapper = forwardRef<any, BubbleWrapperProps>(({
   item,
   bubbleComponent: BubbleComponent = DefaultBubble,
-  setIsAnyBubbleDragging,
   updateBubblePositions,
   height,
   width,
@@ -113,7 +111,6 @@ const BubbleWrapper = forwardRef<any, BubbleWrapperProps>(({
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
           isDragging.current = true;
-          setIsAnyBubbleDragging(true);
         },
         onPanResponderMove: (_, gesture) => {
           // CORRECTED LOGIC: Calculate new position based on original position + total gesture delta
@@ -139,7 +136,6 @@ const BubbleWrapper = forwardRef<any, BubbleWrapperProps>(({
         },
         onPanResponderRelease: () => {
           isDragging.current = false;
-          setIsAnyBubbleDragging(false);
 
           // translation.setValue({x:0,y:0})
           // Animate back to the original position (delta of 0,0)
@@ -154,7 +150,7 @@ const BubbleWrapper = forwardRef<any, BubbleWrapperProps>(({
           lastLogicUpdateRef.current = 0;
         },
       }),
-    [id, originalX, originalY, clampPosition, setIsAnyBubbleDragging, updateBubblePositions, translation]
+    [id, originalX, originalY, clampPosition, updateBubblePositions, translation]
   );
   
   // The animated style now correctly uses the transform from the translation ref

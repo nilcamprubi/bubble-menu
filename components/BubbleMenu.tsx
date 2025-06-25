@@ -33,14 +33,13 @@ type BubbleRef = {
 } | null;
 
 const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, style, bubbleComponent } : BubbleMenuProps) => {
-  console.log("BubbleMenu Rendered")
+  console.log("BubbleMenu Rendered", new Date().toISOString());
   // Window dimensions and center points
   const centerX = width / 2;
   const centerY = height / 2;
 
   // Refs and State
   const bubbleRefs = useRef<Record<string, BubbleRef>>({});
-  const [isAnyBubbleDragging, setIsAnyBubbleDragging] = useState(false);
   
   // Use refs for positions to avoid re-renders
   const bubblePositionsRef = useRef<Record<string, Position>>({});
@@ -186,6 +185,17 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
     return { result: bubblesOutOfPosition.length > 0, array: bubblesOutOfPosition };
   }, [items, isBubbleOutOfPosition]);
 
+  const isAnyBubbleDragging = useCallback(() => {
+
+    for (const item of items) {
+      if (bubbleRefs.current[item.id]?.getIsDragging()) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [bubblePositionsRef])
+
    // Helper: Check if moving a bubble to a position would cause a collision
    const willCollideAtPosition = (id: string, targetPos: Position) => {
     for (const other of items) {
@@ -202,32 +212,51 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
   };
 
   // Optimized return to initial positions
-  const moveBubblesBackToInitialPositions = useCallback(() => {
+  const moveBubblesBackToInitialPositions = useCallback((ignoreCollisions: boolean) => {
     let hasUpdates = false;
     
     items.forEach(item => {
       const bubble = bubbleRefs.current[item.id];
       if (!bubble || bubble.getIsDragging()) return;
-
-      const collision = checkIndividualCollision(item.id);
       const isOutOfPosition = isBubbleOutOfPosition(item.id);
 
-      if (!collision && isOutOfPosition) {
-        const initialPos = initialPositions[item.id];
-        const bubblePos = bubblePositionsRef.current[item.id];
-        if (!initialPos || !bubblePos) return;
-
-        const deltaX = (initialPos.x - bubblePos.x) * 0.5;
-        const deltaY = (initialPos.y - bubblePos.y) * 0.5;
-        
-        const nextPos = {
-          x: Math.abs(deltaX) < 0.5 ? initialPos.x : bubblePos.x + deltaX,
-          y: Math.abs(deltaY) < 0.5 ? initialPos.y : bubblePos.y + deltaY
-        };
-
-        if (!willCollideAtPosition(item.id, nextPos)) {
+      if (ignoreCollisions) { // If ignore collisions
+        if (isOutOfPosition) {
+          const initialPos = initialPositions[item.id];
+          const bubblePos = bubblePositionsRef.current[item.id];
+          if (!initialPos || !bubblePos) return;
+  
+          const deltaX = (initialPos.x - bubblePos.x) * 0.5;
+          const deltaY = (initialPos.y - bubblePos.y) * 0.5;
+          
+          const nextPos = {
+            x: Math.abs(deltaX) < 0.5 ? initialPos.x : bubblePos.x + deltaX,
+            y: Math.abs(deltaY) < 0.5 ? initialPos.y : bubblePos.y + deltaY
+          };
+  
           updateBubblePosition(item.id, nextPos);
           hasUpdates = true;
+        }
+      } else { // If requires collision checking & handling.
+        const collision = checkIndividualCollision(item.id);
+
+        if (!collision && isOutOfPosition) {
+          const initialPos = initialPositions[item.id];
+          const bubblePos = bubblePositionsRef.current[item.id];
+          if (!initialPos || !bubblePos) return;
+  
+          const deltaX = (initialPos.x - bubblePos.x) * 0.5;
+          const deltaY = (initialPos.y - bubblePos.y) * 0.5;
+          
+          const nextPos = {
+            x: Math.abs(deltaX) < 0.5 ? initialPos.x : bubblePos.x + deltaX,
+            y: Math.abs(deltaY) < 0.5 ? initialPos.y : bubblePos.y + deltaY
+          };
+  
+          if (!willCollideAtPosition(item.id, nextPos)) {
+            updateBubblePosition(item.id, nextPos);
+            hasUpdates = true;
+          }
         }
       }
     });
@@ -282,22 +311,25 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
     
     const runLogicLoop = () => {
       const { result, array } = isAnyBubbleOutOfPosition();
-      
+      let ignoreCollisions = true;
+
       if (result) {
-        // Process collisions
-        for (let i = 0; i < array.length; i++) {
-          const previouslyChecked = new Set(array.slice(0, i));
-          
-          for (const item of items) {
-            if (array[i] === item.id || previouslyChecked.has(item.id)) continue;
+        if (isAnyBubbleDragging()) {
+          ignoreCollisions = false;
+          // Process collisions
+          for (let i = 0; i < array.length; i++) {
+            const previouslyChecked = new Set(array.slice(0, i));
             
-            if (checkCollision(array[i], item.id).isColliding) {
-              handleCollision(array[i], item.id);
+            for (const item of items) {
+              if (array[i] === item.id || previouslyChecked.has(item.id)) continue;
+              
+              if (checkCollision(array[i], item.id).isColliding) {
+                handleCollision(array[i], item.id);
+              }
             }
           }
-        }
-        
-        moveBubblesBackToInitialPositions();
+        } 
+        moveBubblesBackToInitialPositions(ignoreCollisions);        
       }
       
       logicTimeoutId = setTimeout(runLogicLoop, 1000 / K.FPS_LOGIC);
@@ -336,7 +368,6 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
         style: style?.bubble,
       }}
       bubbleComponent={bubbleComponent}
-      setIsAnyBubbleDragging={setIsAnyBubbleDragging}
       updateBubblePositions={updateBubblePosition}
       height={height}
       width={width}
@@ -360,7 +391,6 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
           style: style?.bubble,
         }}
         bubbleComponent={bubbleComponent}
-        setIsAnyBubbleDragging={setIsAnyBubbleDragging}
         updateBubblePositions={updateBubblePosition}
         height={height}
         width={width}
