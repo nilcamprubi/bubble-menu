@@ -186,6 +186,21 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
     return { result: bubblesOutOfPosition.length > 0, array: bubblesOutOfPosition };
   }, [items, isBubbleOutOfPosition]);
 
+   // Helper: Check if moving a bubble to a position would cause a collision
+   const willCollideAtPosition = (id: string, targetPos: Position) => {
+    for (const other of items) {
+      if (other.id === id) continue;
+      const otherPos = bubblePositionsRef.current[other.id];
+      const dx = otherPos.x - targetPos.x;
+      const dy = otherPos.y - targetPos.y;
+      const minDist = (bubbleRadius ?? 50) * 2 + 10;
+      if (Math.hypot(dx, dy) < minDist) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Optimized return to initial positions
   const moveBubblesBackToInitialPositions = useCallback(() => {
     let hasUpdates = false;
@@ -210,8 +225,10 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
           y: Math.abs(deltaY) < 0.5 ? initialPos.y : bubblePos.y + deltaY
         };
 
-        updateBubblePosition(item.id, nextPos);
-        hasUpdates = true;
+        if (!willCollideAtPosition(item.id, nextPos)) {
+          updateBubblePosition(item.id, nextPos);
+          hasUpdates = true;
+        }
       }
     });
     

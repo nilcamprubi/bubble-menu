@@ -7,7 +7,7 @@ import { styles } from '../styles';
 import { BubbleStyleProps } from './BubbleWrapper';
 
 export interface BubbleProps {
-  label: string;
+  id: string;
   radius: number;
   originalX?: number;
   originalY?: number;
@@ -16,7 +16,7 @@ export interface BubbleProps {
   style?: BubbleStyleProps;
 }
 
-const DefaultBubble = forwardRef(({ label, radius, text, icon, style }: BubbleProps, ref) => {
+const DefaultBubble = forwardRef(({ id, radius, text, icon, style }: BubbleProps, ref) => {
 
   return (
         <Shadow
