@@ -13,6 +13,8 @@ const menuItems: BubbleProps[] = [
   { id: "Residencia", text: "Residencia", radius: radius, icon: require('./assets/residencia-icon.png') },
   { id: "Cuidados", text: "Cuidados", radius: radius, icon: require('./assets/cuidados-icon.png') }, 
   { id: "Masajista", text: "Masajista", radius: radius, icon: require('./assets/masajistas-icon.png') }, 
+  { id: "Cuidados2", text: "Cuidados", radius: radius, icon: require('./assets/cuidados-icon.png') }, 
+  { id: "Masajista2", text: "Masajista", radius: radius, icon: require('./assets/masajistas-icon.png') }, 
 ];
 
 const menuStyle: BubbleMenuStyleProps = {

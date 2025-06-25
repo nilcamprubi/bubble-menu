@@ -26,6 +26,7 @@ interface BubbleMenuProps {
   height: number // Container height constraint
   width: number // Container width constraint
   bubbleRadius?: number // Radius of each bubble (default: 50px)
+  menuRotation?: number // Number used to rotate the bubble
   style?: BubbleMenuStyleProps // Style overrides for menu components
   bubbleComponent?: React.ComponentType<BubbleProps>; // Custom bubble component renderer
 }
@@ -54,7 +55,7 @@ type BubbleRef = {
  * - Memory-efficient ref-based position tracking
  *
  */
-const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, style, bubbleComponent } : BubbleMenuProps) => {
+const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, menuRotation = 4, style, bubbleComponent } : BubbleMenuProps) => {
   console.log("BubbleMenu Rendered", new Date().toISOString());
   
   // Calculate viewport center coordinates for menu positioning
@@ -95,7 +96,6 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
   const initialPositions = useMemo(() => {
     const positions: Record<string, Position> = {};
     items.forEach((item, index) => {
-      const menuRotation = 4; // Adjusts starting angle of the circle
       const angle = index === 0 ? 0 : (index * (2 * Math.PI)) / (items.length - 1) - Math.PI / menuRotation;
       const radius = menuDistance + 130; // Additional offset for better spacing
       const distance = index === 0 ? 0 : radius;
@@ -104,7 +104,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
       positions[item.id] = constrainToWindow({ x, y }, bubbleRadius);
     });
     return positions;
-  }, [items, centerX, centerY, menuDistance, width, height, bubbleRadius, constrainToWindow]);
+  }, [items, centerX, centerY, menuDistance, width, height, bubbleRadius, constrainToWindow, menuRotation]);
 
   // Initialize position tracking on mount - only runs once to prevent layout shifts
   useEffect(() => {
@@ -450,7 +450,7 @@ const BubbleMenu = ({ items, menuDistance, height, width, bubbleRadius = 50, sty
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isAnyBubbleOutOfPosition, items, checkCollision, handleCollision, moveBubblesBackToInitialPositions, updateUI]);
+  }, []);
 
   /**
    * Memoized Component Rendering
